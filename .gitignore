@@ -1,2 +1,12 @@
-db.properties
-db.properties
+nbproject/private/
+build/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+*.class
+*.log
+.DS_Store
+Thumbs.db
+Facturas/
+
