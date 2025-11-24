@@ -15,9 +15,9 @@ public class UIFormasPago extends javax.swing.JFrame {
         jSeparator1 = new javax.swing.JSeparator();
         jSeparator2 = new javax.swing.JSeparator();
         lblCodigo = new javax.swing.JLabel();
-        cboxCodigo = new javax.swing.JComboBox<>();
-        lblDescripcion = new javax.swing.JLabel();
-        txtDescricpion = new javax.swing.JTextField();
+        cboxCodigo = new javax.swing.JComboBox();
+        lblDescripciondelPago = new javax.swing.JLabel();
+        txtDescripcion = new javax.swing.JTextField();
         btnGuardarFormasPago = new javax.swing.JButton();
         btnConsultarFormasPago = new javax.swing.JButton();
         btnModificarFormasPago = new javax.swing.JButton();
@@ -31,11 +31,9 @@ public class UIFormasPago extends javax.swing.JFrame {
 
         lblFormasdePago.setText("Formas de Pago");
 
-        lblCodigo.setText("Código:");
+        lblCodigo.setText("Forma de Pago");
 
-        cboxCodigo.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "", "0", "1", "2" }));
-
-        lblDescripcion.setText("Descripcion:");
+        lblDescripciondelPago.setText("Descripcion:");
 
         btnGuardarFormasPago.setText("Guardar");
 
@@ -90,12 +88,12 @@ public class UIFormasPago extends javax.swing.JFrame {
                     .addGroup(layout.createSequentialGroup()
                         .addGap(81, 81, 81)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(lblDescripcion)
+                            .addComponent(lblDescripciondelPago)
                             .addComponent(lblCodigo))
                         .addGap(18, 18, 18)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(cboxCodigo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(txtDescricpion, javax.swing.GroupLayout.PREFERRED_SIZE, 119, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(txtDescripcion, javax.swing.GroupLayout.DEFAULT_SIZE, 119, Short.MAX_VALUE)
+                            .addComponent(cboxCodigo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addContainerGap(42, Short.MAX_VALUE)
@@ -131,8 +129,8 @@ public class UIFormasPago extends javax.swing.JFrame {
                     .addComponent(cboxCodigo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(18, 18, 18)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(lblDescripcion)
-                    .addComponent(txtDescricpion, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(lblDescripciondelPago)
+                    .addComponent(txtDescripcion, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(50, 50, 50)
                 .addComponent(jSeparator2, javax.swing.GroupLayout.PREFERRED_SIZE, 10, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 81, Short.MAX_VALUE)
@@ -169,14 +167,14 @@ public class UIFormasPago extends javax.swing.JFrame {
     public javax.swing.JButton btnEliminarFormasPago;
     public javax.swing.JButton btnGuardarFormasPago;
     public javax.swing.JButton btnModificarFormasPago;
-    public javax.swing.JComboBox<String> cboxCodigo;
+    public javax.swing.JComboBox cboxCodigo;
     public javax.swing.JSeparator jSeparator1;
     public javax.swing.JSeparator jSeparator2;
     public javax.swing.JTable jTable1;
     public javax.swing.JLabel lblCodigo;
-    public javax.swing.JLabel lblDescripcion;
+    public javax.swing.JLabel lblDescripciondelPago;
     public javax.swing.JLabel lblFormasdePago;
     public javax.swing.JScrollPane spFormasPago;
-    public javax.swing.JTextField txtDescricpion;
+    public javax.swing.JTextField txtDescripcion;
     // End of variables declaration//GEN-END:variables
 }

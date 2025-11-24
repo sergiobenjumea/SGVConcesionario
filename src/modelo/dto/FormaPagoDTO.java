@@ -3,31 +3,31 @@ package modelo.dto;
 import java.io.Serializable;
 
 public class FormaPagoDTO implements Serializable {
-    
-    private String codigo;
+    private int idFormaPago;
+    private String codigoForma;
+    private String nombreForma;
     private String descripcion;
-    
-    public FormaPagoDTO() {
-    }
+    private int activo;
 
-    public String getCodigo() {
-        return codigo;
-    }
+    public FormaPagoDTO() {}
 
-    public void setCodigo(String codigo) {
-        this.codigo = codigo;
-    }
+    public int getIdFormaPago() { return idFormaPago; }
+    public void setIdFormaPago(int idFormaPago) { this.idFormaPago = idFormaPago; }
 
-    public String getDescripcion() {
-        return descripcion;
-    }
+    public String getCodigoForma() { return codigoForma; }
+    public void setCodigoForma(String codigoForma) { this.codigoForma = codigoForma; }
 
-    public void setDescripcion(String descripcion) {
-        this.descripcion = descripcion;
-    }
+    public String getNombreForma() { return nombreForma; }
+    public void setNombreForma(String nombreForma) { this.nombreForma = nombreForma; }
+
+    public String getDescripcion() { return descripcion; }
+    public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
+
+    public int getActivo() { return activo; }
+    public void setActivo(int activo) { this.activo = activo; }
     
     @Override
     public String toString() {
-        return codigo + " - " + descripcion;
+        return this.getDescripcion();
     }
 }

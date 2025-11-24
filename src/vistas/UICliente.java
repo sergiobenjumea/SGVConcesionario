@@ -27,7 +27,7 @@ public class UICliente extends javax.swing.JFrame {
         txtedadCliente = new javax.swing.JTextField();
         lblemailCliente = new javax.swing.JLabel();
         lblTipoIDCliente = new javax.swing.JLabel();
-        cboxTipoIDCliente = new javax.swing.JComboBox<>();
+        cboxTipoIDCliente = new javax.swing.JComboBox();
         txtemailCliente = new javax.swing.JTextField();
         btnGuardarCliente = new javax.swing.JButton();
         btnConsultarCliente = new javax.swing.JButton();
@@ -47,6 +47,12 @@ public class UICliente extends javax.swing.JFrame {
 
         lblnombreCliente.setText("Nombre:");
 
+        txtnombreCliente.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtnombreClienteActionPerformed(evt);
+            }
+        });
+
         lblfechadeNacimientoCliente.setText("Fecha de Nacimiento:");
 
         lblformatofechaNacCliente.setEditable(false);
@@ -60,8 +66,6 @@ public class UICliente extends javax.swing.JFrame {
         lblemailCliente.setText("E-mail:");
 
         lblTipoIDCliente.setText("Tipo ID:");
-
-        cboxTipoIDCliente.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "", "CC", "CE", "NIT", "Pasaporte" }));
 
         btnGuardarCliente.setText("Guardar");
 
@@ -137,11 +141,11 @@ public class UICliente extends javax.swing.JFrame {
                             .addGroup(layout.createSequentialGroup()
                                 .addComponent(lblTipoIDCliente)
                                 .addGap(33, 33, 33)
-                                .addComponent(cboxTipoIDCliente, javax.swing.GroupLayout.PREFERRED_SIZE, 45, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(26, 26, 26)
+                                .addComponent(cboxTipoIDCliente, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addGap(18, 18, 18)
                                 .addComponent(lblIdentificacionCliente)
                                 .addGap(18, 18, 18)
-                                .addComponent(txtIdentificacionCliente))
+                                .addComponent(txtIdentificacionCliente, javax.swing.GroupLayout.PREFERRED_SIZE, 145, javax.swing.GroupLayout.PREFERRED_SIZE))
                             .addGroup(layout.createSequentialGroup()
                                 .addComponent(lblemailCliente)
                                 .addGap(18, 18, 18)
@@ -219,6 +223,10 @@ public class UICliente extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_btnConsultarTodosClienteActionPerformed
 
+    private void txtnombreClienteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtnombreClienteActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtnombreClienteActionPerformed
+
    
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -227,7 +235,7 @@ public class UICliente extends javax.swing.JFrame {
     public javax.swing.JButton btnEliminarCliente;
     public javax.swing.JButton btnGuardarCliente;
     public javax.swing.JButton btnModificarCliente;
-    public javax.swing.JComboBox<String> cboxTipoIDCliente;
+    public javax.swing.JComboBox cboxTipoIDCliente;
     public javax.swing.JSeparator jSeparator;
     public javax.swing.JSeparator jSeparator1;
     public javax.swing.JLabel lblDatosdelCliente;

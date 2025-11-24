@@ -83,7 +83,7 @@ public class RegistrarVentaController implements ActionListener {
         vista.cboxFormasPago.addItem(""); // Opción vacía
         
         for (FormaPagoDTO forma : formas) {
-            vista.cboxFormasPago.addItem(forma.getCodigo());
+            vista.cboxFormasPago.addItem(forma.getCodigoForma());
         }
     }
     
@@ -160,7 +160,7 @@ public class RegistrarVentaController implements ActionListener {
             }
             
             automovilSeleccionado = auto;
-            vista.txtMarcaAuto.setText(auto.getMarca());
+            vista.txtMarca.setText(auto.getMarca());
             vista.txtColorAuto.setText(auto.getColor());
             vista.txtPrecioBase.setText(String.format("$%,.2f", auto.getPrecioBase()));
             vista.txtTipoMotor.setText(auto.getNombreTipoMotor());
@@ -213,49 +213,47 @@ public class RegistrarVentaController implements ActionListener {
     
     // ========== CALCULAR TOTAL ==========
     private void calcularTotal() {
-        // Validar que haya un automóvil seleccionado
-        if (automovilSeleccionado == null) {
-            JOptionPane.showMessageDialog(vista,
-                "Primero debe consultar un automóvil",
-                "Automóvil requerido",
-                JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        
-        // Validar forma de pago
-        String codigoFormaPago = (String) vista.cboxFormasPago.getSelectedItem();
-        if (codigoFormaPago == null || codigoFormaPago.trim().isEmpty()) {
-            JOptionPane.showMessageDialog(vista,
-                "Seleccione una forma de pago",
-                "Forma de pago requerida",
-                JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        
-        // Obtener descripción de la forma de pago
-        FormaPagoDTO formaPago = formaPagoDAO.leerPorCodigo(codigoFormaPago);
-        if (formaPago != null) {
-            vista.txtFormasPago.setText(formaPago.getDescripcion());
-        }
-        
-        // Los valores ya están calculados en el automóvil
-        double impuesto = automovilSeleccionado.getImpuestoVenta();
-        double iva = automovilSeleccionado.getIva();
-        double total = automovilSeleccionado.getPrecioTotal();
-        
-        vista.txtImpoVenta.setText(String.format("$%,.2f", impuesto));
-        vista.txtIVA.setText(String.format("$%,.2f", iva));
-        vista.txtTotalPagar.setText(String.format("$%,.2f", total));
-        
+    // Validar que haya un automóvil seleccionado
+    if (automovilSeleccionado == null) {
         JOptionPane.showMessageDialog(vista,
-            "Total calculado correctamente\n\n" +
-            "Precio Base: $" + String.format("%,.2f", automovilSeleccionado.getPrecioBase()) + "\n" +
-            "Impuesto: $" + String.format("%,.2f", impuesto) + "\n" +
-            "IVA: $" + String.format("%,.2f", iva) + "\n" +
-            "TOTAL: $" + String.format("%,.2f", total),
-            "Cálculo exitoso",
-            JOptionPane.INFORMATION_MESSAGE);
+            "Primero debe consultar un automóvil",
+            "Automóvil requerido",
+            JOptionPane.WARNING_MESSAGE);
+        return;
     }
+    
+    // Validar forma de pago
+    String codigoFormaPago = (String) vista.cboxFormasPago.getSelectedItem();
+    if (codigoFormaPago == null || codigoFormaPago.trim().isEmpty()) {
+        JOptionPane.showMessageDialog(vista,
+            "Seleccione una forma de pago",
+            "Forma de pago requerida",
+            JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+    
+    // Ya NO necesitas buscar ni mostrar la descripción en un campo de texto
+    // El usuario ve la forma de pago directamente en el combo
+    
+    // Los valores ya están calculados en el automóvil
+    double impuesto = automovilSeleccionado.getImpuestoVenta();
+    double iva = automovilSeleccionado.getIva();
+    double total = automovilSeleccionado.getPrecioTotal();
+    
+    vista.txtImpoVenta.setText(String.format("$%,.2f", impuesto));
+    vista.txtIVA.setText(String.format("$%,.2f", iva));
+    vista.txtTotalPagar.setText(String.format("$%,.2f", total));
+    
+    JOptionPane.showMessageDialog(vista,
+        "Total calculado correctamente\n\n" +
+        "Precio Base: $" + String.format("%,.2f", automovilSeleccionado.getPrecioBase()) + "\n" +
+        "Impuesto: $" + String.format("%,.2f", impuesto) + "\n" +
+        "IVA: $" + String.format("%,.2f", iva) + "\n" +
+        "TOTAL: $" + String.format("%,.2f", total),
+        "Cálculo exitoso",
+        JOptionPane.INFORMATION_MESSAGE);
+}
+
     
     // ========== REGISTRAR VENTA ==========
     private void registrarVenta() {
@@ -403,7 +401,7 @@ public class RegistrarVentaController implements ActionListener {
     
     private void limpiarAutomovil() {
         vista.txtCodigoAuto.setText("");
-        vista.txtMarcaAuto.setText("");
+        vista.txtMarca.setText("");
         vista.txtColorAuto.setText("");
         vista.txtPrecioBase.setText("");
         vista.txtTipoMotor.setText("");
@@ -424,7 +422,6 @@ public class RegistrarVentaController implements ActionListener {
         limpiarCliente();
         
         vista.cboxFormasPago.setSelectedIndex(0);
-        vista.txtFormasPago.setText("");
         vista.txtImpoVenta.setText("");
         vista.txtIVA.setText("");
         vista.txtTotalPagar.setText("");

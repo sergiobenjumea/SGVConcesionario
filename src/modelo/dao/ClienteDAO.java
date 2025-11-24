@@ -1,205 +1,151 @@
 package modelo.dao;
 
-import config.ConexionDB;
-import modelo.dto.ClienteDTO;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import modelo.dto.ClienteDTO;
+import config.ConexionDB;
 
-/**
- * DAO para la tabla clientes
- * Implementa CRUD completo según el patrón del profesor
- */
 public class ClienteDAO {
     
-    // ========== CREATE (Insertar) ==========
+    // Crear nuevo cliente
     public int crear(ClienteDTO cliente) {
-        String sql = "INSERT INTO clientes (tipo_identificacion, identificacion, nombre, "
-                   + "fecha_nacimiento, edad, email) VALUES (?, ?, ?, ?, ?, ?)";
-        
-        try {
-            Connection con = ConexionDB.getConexion();
-            PreparedStatement ps = con.prepareStatement(sql);
-            
-            // Llenar los parámetros
-            ps.setString(1, cliente.getTipoIdentificacion());
+        String sql = "INSERT INTO clientes (id_tipo_identificacion, identificacion, nombre, fecha_nacimiento, edad, email) "
+                   + "VALUES (?, ?, ?, ?, ?, ?)";
+        try (Connection con = ConexionDB.getConexion();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, cliente.getIdTipoIdentificacion());
             ps.setString(2, cliente.getIdentificacion());
             ps.setString(3, cliente.getNombre());
             ps.setDate(4, new java.sql.Date(cliente.getFechaNacimiento().getTime()));
             ps.setInt(5, cliente.getEdad());
             ps.setString(6, cliente.getEmail());
-            
-            // Ejecutar
-            int resultado = ps.executeUpdate();
-            
-            System.out.println("✅ Cliente creado: " + cliente.getNombre());
-            return resultado;
-            
-        } catch (SQLException e) {
-            System.err.println("❌ Error al crear cliente");
+            return ps.executeUpdate();
+        } catch (Exception e) {
             e.printStackTrace();
             return 0;
         }
     }
     
-    // ========== READ (Leer por ID) ==========
-    public ClienteDTO leer(int idCliente) {
-        String sql = "SELECT * FROM clientes WHERE id_cliente = ?";
-        ClienteDTO cliente = null;
-        
-        try {
-            Connection con = ConexionDB.getConexion();
-            PreparedStatement ps = con.prepareStatement(sql);
-            ps.setInt(1, idCliente);
-            
-            ResultSet rs = ps.executeQuery();
-            
-            if (rs.next()) {
-                cliente = new ClienteDTO();
-                cliente.setIdCliente(rs.getInt("id_cliente"));
-                cliente.setTipoIdentificacion(rs.getString("tipo_identificacion"));
-                cliente.setIdentificacion(rs.getString("identificacion"));
-                cliente.setNombre(rs.getString("nombre"));
-                cliente.setFechaNacimiento(rs.getDate("fecha_nacimiento"));
-                cliente.setEdad(rs.getInt("edad"));
-                cliente.setEmail(rs.getString("email"));
-                cliente.setFechaRegistro(rs.getTimestamp("fecha_registro"));
-                
-                System.out.println("✅ Cliente encontrado: " + cliente.getNombre());
-            } else {
-                System.out.println("⚠️ Cliente no encontrado con ID: " + idCliente);
-            }
-            
-        } catch (SQLException e) {
-            System.err.println("❌ Error al leer cliente");
-            e.printStackTrace();
-        }
-        
-        return cliente;
-    }
-    
-    // ========== READ (Leer por Identificación) ==========
+    // Buscar cliente por identificación (documento)
     public ClienteDTO leerPorIdentificacion(String identificacion) {
-        String sql = "SELECT * FROM clientes WHERE identificacion = ?";
-        ClienteDTO cliente = null;
-        
-        try {
-            Connection con = ConexionDB.getConexion();
-            PreparedStatement ps = con.prepareStatement(sql);
+        String sql = "SELECT c.*, t.codigo_tipo, t.nombre_tipo "
+                   + "FROM clientes c "
+                   + "INNER JOIN tipos_identificacion t ON c.id_tipo_identificacion = t.id_tipo_identificacion "
+                   + "WHERE c.identificacion = ?";
+        try (Connection con = ConexionDB.getConexion();
+             PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, identificacion);
-            
             ResultSet rs = ps.executeQuery();
-            
             if (rs.next()) {
-                cliente = new ClienteDTO();
-                cliente.setIdCliente(rs.getInt("id_cliente"));
-                cliente.setTipoIdentificacion(rs.getString("tipo_identificacion"));
-                cliente.setIdentificacion(rs.getString("identificacion"));
-                cliente.setNombre(rs.getString("nombre"));
-                cliente.setFechaNacimiento(rs.getDate("fecha_nacimiento"));
-                cliente.setEdad(rs.getInt("edad"));
-                cliente.setEmail(rs.getString("email"));
-                cliente.setFechaRegistro(rs.getTimestamp("fecha_registro"));
-                
-                System.out.println("✅ Cliente encontrado: " + cliente.getNombre());
+                ClienteDTO c = new ClienteDTO();
+                c.setIdCliente(rs.getInt("id_cliente"));
+                c.setIdTipoIdentificacion(rs.getInt("id_tipo_identificacion"));
+                c.setCodigoTipoIdentificacion(rs.getString("codigo_tipo"));
+                c.setNombreTipoIdentificacion(rs.getString("nombre_tipo"));
+                c.setIdentificacion(rs.getString("identificacion"));
+                c.setNombre(rs.getString("nombre"));
+                c.setFechaNacimiento(rs.getDate("fecha_nacimiento"));
+                c.setEdad(rs.getInt("edad"));
+                c.setEmail(rs.getString("email"));
+                c.setFechaRegistro(rs.getDate("fecha_registro"));
+                return c;
             }
-            
-        } catch (SQLException e) {
-            System.err.println("❌ Error al leer cliente por identificación");
+        } catch (Exception e) {
             e.printStackTrace();
         }
-        
-        return cliente;
+        return null;
     }
     
-    // ========== UPDATE (Actualizar) ==========
+    // Actualizar cliente existente
     public int actualizar(ClienteDTO cliente) {
-        String sql = "UPDATE clientes SET tipo_identificacion = ?, identificacion = ?, "
-                   + "nombre = ?, fecha_nacimiento = ?, edad = ?, email = ? "
-                   + "WHERE id_cliente = ?";
-        
-        try {
-            Connection con = ConexionDB.getConexion();
-            PreparedStatement ps = con.prepareStatement(sql);
-            
-            ps.setString(1, cliente.getTipoIdentificacion());
+        String sql = "UPDATE clientes SET id_tipo_identificacion = ?, identificacion = ?, nombre = ?, "
+                   + "fecha_nacimiento = ?, edad = ?, email = ? WHERE id_cliente = ?";
+        try (Connection con = ConexionDB.getConexion();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, cliente.getIdTipoIdentificacion());
             ps.setString(2, cliente.getIdentificacion());
             ps.setString(3, cliente.getNombre());
             ps.setDate(4, new java.sql.Date(cliente.getFechaNacimiento().getTime()));
             ps.setInt(5, cliente.getEdad());
             ps.setString(6, cliente.getEmail());
             ps.setInt(7, cliente.getIdCliente());
-            
-            int resultado = ps.executeUpdate();
-            
-            if (resultado > 0) {
-                System.out.println("✅ Cliente actualizado: " + cliente.getNombre());
-            }
-            
-            return resultado;
-            
-        } catch (SQLException e) {
-            System.err.println("❌ Error al actualizar cliente");
+            return ps.executeUpdate();
+        } catch (Exception e) {
             e.printStackTrace();
             return 0;
         }
     }
     
-    // ========== DELETE (Eliminar) ==========
+    // Eliminar cliente por ID
     public int eliminar(int idCliente) {
         String sql = "DELETE FROM clientes WHERE id_cliente = ?";
-        
-        try {
-            Connection con = ConexionDB.getConexion();
-            PreparedStatement ps = con.prepareStatement(sql);
+        try (Connection con = ConexionDB.getConexion();
+             PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, idCliente);
-            
-            int resultado = ps.executeUpdate();
-            
-            if (resultado > 0) {
-                System.out.println("✅ Cliente eliminado con ID: " + idCliente);
-            }
-            
-            return resultado;
-            
-        } catch (SQLException e) {
-            System.err.println("❌ Error al eliminar cliente");
+            return ps.executeUpdate();
+        } catch (Exception e) {
             e.printStackTrace();
             return 0;
         }
     }
     
-    // ========== READ ALL (Leer todos) ==========
+    // Listar todos los clientes
     public List<ClienteDTO> leerTodos() {
-        String sql = "SELECT * FROM clientes ORDER BY nombre";
         List<ClienteDTO> lista = new ArrayList<>();
-        
-        try {
-            Connection con = ConexionDB.getConexion();
-            PreparedStatement ps = con.prepareStatement(sql);
-            ResultSet rs = ps.executeQuery();
-            
+        String sql = "SELECT c.*, t.codigo_tipo, t.nombre_tipo "
+                   + "FROM clientes c "
+                   + "INNER JOIN tipos_identificacion t ON c.id_tipo_identificacion = t.id_tipo_identificacion";
+        try (Connection con = ConexionDB.getConexion();
+             PreparedStatement ps = con.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
-                ClienteDTO cliente = new ClienteDTO();
-                cliente.setIdCliente(rs.getInt("id_cliente"));
-                cliente.setTipoIdentificacion(rs.getString("tipo_identificacion"));
-                cliente.setIdentificacion(rs.getString("identificacion"));
-                cliente.setNombre(rs.getString("nombre"));
-                cliente.setFechaNacimiento(rs.getDate("fecha_nacimiento"));
-                cliente.setEdad(rs.getInt("edad"));
-                cliente.setEmail(rs.getString("email"));
-                cliente.setFechaRegistro(rs.getTimestamp("fecha_registro"));
-                
-                lista.add(cliente);
+                ClienteDTO c = new ClienteDTO();
+                c.setIdCliente(rs.getInt("id_cliente"));
+                c.setIdTipoIdentificacion(rs.getInt("id_tipo_identificacion"));
+                c.setCodigoTipoIdentificacion(rs.getString("codigo_tipo"));
+                c.setNombreTipoIdentificacion(rs.getString("nombre_tipo"));
+                c.setIdentificacion(rs.getString("identificacion"));
+                c.setNombre(rs.getString("nombre"));
+                c.setFechaNacimiento(rs.getDate("fecha_nacimiento"));
+                c.setEdad(rs.getInt("edad"));
+                c.setEmail(rs.getString("email"));
+                c.setFechaRegistro(rs.getDate("fecha_registro"));
+                lista.add(c);
             }
-            
-            System.out.println("✅ Se encontraron " + lista.size() + " clientes");
-            
-        } catch (SQLException e) {
-            System.err.println("❌ Error al leer todos los clientes");
+        } catch (Exception e) {
             e.printStackTrace();
         }
-        
         return lista;
+    }
+    
+    // Buscar cliente por ID (método auxiliar opcional)
+    public ClienteDTO leerPorId(int idCliente) {
+        String sql = "SELECT c.*, t.codigo_tipo, t.nombre_tipo "
+                   + "FROM clientes c "
+                   + "INNER JOIN tipos_identificacion t ON c.id_tipo_identificacion = t.id_tipo_identificacion "
+                   + "WHERE c.id_cliente = ?";
+        try (Connection con = ConexionDB.getConexion();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, idCliente);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                ClienteDTO c = new ClienteDTO();
+                c.setIdCliente(rs.getInt("id_cliente"));
+                c.setIdTipoIdentificacion(rs.getInt("id_tipo_identificacion"));
+                c.setCodigoTipoIdentificacion(rs.getString("codigo_tipo"));
+                c.setNombreTipoIdentificacion(rs.getString("nombre_tipo"));
+                c.setIdentificacion(rs.getString("identificacion"));
+                c.setNombre(rs.getString("nombre"));
+                c.setFechaNacimiento(rs.getDate("fecha_nacimiento"));
+                c.setEdad(rs.getInt("edad"));
+                c.setEmail(rs.getString("email"));
+                c.setFechaRegistro(rs.getDate("fecha_registro"));
+                return c;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

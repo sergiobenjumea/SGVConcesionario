@@ -3,16 +3,14 @@ package modelo.dto;
 import java.io.Serializable;
 
 public class TipoIdentificacionDTO implements Serializable {
-    
-    private int idTipoIdentificacion;
-    private String codigo;
-    private String nombre;
-    private String descripcion;
-    private boolean activo;
-    
-    public TipoIdentificacionDTO() {
-    }
 
+    private int idTipoIdentificacion;
+    private String codigoTipo;
+    private String nombreTipo;
+    private String descripcion;
+    private int activo;
+
+    // Getters y setters
     public int getIdTipoIdentificacion() {
         return idTipoIdentificacion;
     }
@@ -21,20 +19,20 @@ public class TipoIdentificacionDTO implements Serializable {
         this.idTipoIdentificacion = idTipoIdentificacion;
     }
 
-    public String getCodigo() {
-        return codigo;
+    public String getCodigoTipo() {
+        return codigoTipo;
     }
 
-    public void setCodigo(String codigo) {
-        this.codigo = codigo;
+    public void setCodigoTipo(String codigoTipo) {
+        this.codigoTipo = codigoTipo;
     }
 
-    public String getNombre() {
-        return nombre;
+    public String getNombreTipo() {
+        return nombreTipo;
     }
 
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
+    public void setNombreTipo(String nombreTipo) {
+        this.nombreTipo = nombreTipo;
     }
 
     public String getDescripcion() {
@@ -45,16 +43,17 @@ public class TipoIdentificacionDTO implements Serializable {
         this.descripcion = descripcion;
     }
 
-    public boolean isActivo() {
+    public int getActivo() {
         return activo;
     }
 
-    public void setActivo(boolean activo) {
+    public void setActivo(int activo) {
         this.activo = activo;
     }
 
+    // Método para mostrar el nombre en el JComboBox
     @Override
     public String toString() {
-        return codigo; // Para mostrar en ComboBox
+        return nombreTipo; // El texto mostrado en el JComboBox
     }
 }
