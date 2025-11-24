@@ -12,6 +12,7 @@ public class AutomovilDTO {
     private String nombreMarca;
     private String nombreLinea;
     private String nombreMotor;
+    private String estado;
 
     public AutomovilDTO() {
     }
@@ -51,4 +52,7 @@ public class AutomovilDTO {
 
     public String getNombreMotor() { return nombreMotor; }
     public void setNombreMotor(String nombreMotor) { this.nombreMotor = nombreMotor; }
+    
+    public String getEstado() { return estado; }
+    public void setEstado(String estado) { this.estado = estado; }
 }

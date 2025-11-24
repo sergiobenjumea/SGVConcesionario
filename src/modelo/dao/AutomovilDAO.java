@@ -165,6 +165,7 @@ public class AutomovilDAO {
                 a.setColor(rs.getString("color"));
                 a.setPrecioBase(rs.getDouble("precio_base"));
                 a.setNombreMotor(rs.getString("motor"));
+                a.setEstado(rs.getString("estado"));
                 // Importante: Guardar el estado para saber si ya se vendió
                 // (Necesitarás agregar private String estado; en tu DTO si quieres validarlo estricto)
             }

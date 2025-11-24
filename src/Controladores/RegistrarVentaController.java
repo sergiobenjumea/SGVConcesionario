@@ -1,17 +1,19 @@
 package Controladores;
 
-import modelo.dao.*; // Importamos todos los DAOs
-import modelo.dto.*; // Importamos todos los DTOs
+import modelo.dao.*;
+import modelo.dto.*;
+import modelo.util.Formato;
+import modelo.util.GeneradorPDF;
 import modelo.util.ItemCombo;
 import vistas.UIRegistrarventa;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusAdapter; // Importante para detectar cambios
+import java.awt.event.FocusEvent;   // Importante para detectar cambios
 import java.sql.Date;
 import java.time.LocalDate;
 import java.util.List;
-import modelo.util.Formato;
-import modelo.util.GeneradorPDF;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
@@ -20,14 +22,12 @@ public class RegistrarVentaController implements ActionListener {
 
     private UIRegistrarventa view;
     
-    // Instanciamos todos los DAOs necesarios
     private VentaDAO ventaDAO;
     private VendedorDAO vendedorDAO;
     private ClienteDAO clienteDAO;
     private AutomovilDAO autoDAO;
     private FormasPagoDAO pagoDAO;
 
-    // Variables temporales para guardar los IDs encontrados
     private int idVendedorEncontrado = 0;
     private int idClienteEncontrado = 0;
     private int idAutoEncontrado = 0;
@@ -42,17 +42,33 @@ public class RegistrarVentaController implements ActionListener {
 
         this.view.setLocationRelativeTo(null);
         
-        // Carga Inicial
         cargarFechaYFactura();
         cargarFormasPago();
         listarVentas();
 
-        // Listeners
+        // --- LISTENERS (BOTONES) ---
         this.view.btnConsultarVendedor.addActionListener(this);
         this.view.btnConsultarCliente.addActionListener(this);
         this.view.btnConsultarAuto.addActionListener(this);
-        this.view.btnCalcularTotal.addActionListener(this);
+        // Ya no existe btnCalcularTotal, lo borramos de aquí
         this.view.btnRegistrarVenta.addActionListener(this);
+        
+        // --- LISTENER AUTOMÁTICO DE PRECIO ---
+        // Esto reemplaza al botón: Al salir de la caja de texto, calcula solo.
+        this.view.txtPrecioBase.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusLost(FocusEvent e) {
+                calcularTotal();
+            }
+        });
+        
+        // También podemos hacer que calcule al dar Enter en la caja
+        this.view.txtPrecioBase.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                calcularTotal();
+            }
+        });
     }
 
     private void cargarFechaYFactura() {
@@ -61,7 +77,6 @@ public class RegistrarVentaController implements ActionListener {
     }
 
     private void cargarFormasPago() {
-        // Obtenemos formas de pago y las metemos al combo
         List<FormasPagoDTO> lista = pagoDAO.listar();
         DefaultComboBoxModel model = new DefaultComboBoxModel();
         model.addElement(new ItemCombo(0, "Seleccione..."));
@@ -79,14 +94,14 @@ public class RegistrarVentaController implements ActionListener {
             buscarCliente();
         } else if (e.getSource() == view.btnConsultarAuto) {
             buscarAuto();
-        } else if (e.getSource() == view.btnCalcularTotal) {
-            calcularTotal();
-        } else if (e.getSource() == view.btnRegistrarVenta) {
+        } 
+        // Eliminamos el 'else if' del botón calcular
+        else if (e.getSource() == view.btnRegistrarVenta) {
             registrarVenta();
         }
     }
 
-    // --- MÉTODOS DE BÚSQUEDA ---
+    // --- BÚSQUEDAS ---
 
     private void buscarVendedor() {
         String id = view.txtIDVendedor.getText();
@@ -118,21 +133,33 @@ public class RegistrarVentaController implements ActionListener {
     }
 
     private void buscarAuto() {
-        // En la vista dice "Código Auto", pero usaremos el ID numérico por ahora
         try {
             int id = Integer.parseInt(view.txtCodigoAuto.getText());
             AutomovilDTO a = autoDAO.buscarPorId(id);
+            
             if (a != null) {
+                // --- VALIDACIÓN DE ESTADO (EL CANDADO) ---
+                if (a.getEstado().equalsIgnoreCase("Vendido")) {
+                    JOptionPane.showMessageDialog(view, "⛔ ¡ERROR! Este vehículo ya figura como VENDIDO.", "Vehículo no disponible", JOptionPane.ERROR_MESSAGE);
+                    limpiarCamposAuto(); // Método opcional para limpiar si había algo escrito
+                    return; // DETIENE LA EJECUCIÓN AQUÍ
+                }
+                // -----------------------------------------
                 view.txtMarca.setText(a.getNombreMarca());
                 view.txtLinea.setText(a.getNombreLinea());
                 view.txtAnio.setText(String.valueOf(a.getAnio()));
                 view.txtColorAuto.setText(a.getColor());
                 view.txtTipoMotor.setText(a.getNombreMotor());
-                view.txtPrecioBase.setText(String.valueOf(a.getPrecioBase()));
+                
+                // Llenar precio CRUDO para editar
+                view.txtPrecioBase.setText(String.valueOf(a.getPrecioBase())); 
+                
                 idAutoEncontrado = a.getId();
                 
-                // Calculamos totales automáticamente al encontrar el auto
-                calcularTotal();
+                
+                // Calcular y llenar los formateados automáticamente
+                calcularTotal(); 
+                
             } else {
                 JOptionPane.showMessageDialog(view, "Automóvil no encontrado");
             }
@@ -143,37 +170,38 @@ public class RegistrarVentaController implements ActionListener {
 
     private void calcularTotal() {
         try {
-            // El precio base suele ser ingresado manualmente sin formato, lo leemos normal
+            // Leemos el precio crudo que el usuario puede editar
             double precio = Double.parseDouble(view.txtPrecioBase.getText());
+            
+            // Actualizamos la caja "espejo" con formato bonito
+            view.txtPrecioBase1.setText(Formato.moneda(precio));
             
             double impuesto = precio * 0.15; 
             double iva = precio * 0.19;      
             double total = precio + impuesto + iva;
 
-            // --- CAMBIO: Mostramos con formato en los campos no editables ---
             view.txtImpoVenta.setText(Formato.moneda(impuesto));
             view.txtIVA.setText(Formato.moneda(iva));
             view.txtTotalPagar.setText(Formato.moneda(total));
-            // ---------------------------------------------------------------
         } catch (Exception e) {
-            // Ignorar
+            // Si el campo está vacío o inválido, no hacemos nada
         }
     }
 
     private void registrarVenta() {
-        // ... (Tus validaciones iniciales de IDs y Combos las dejas igual) ...
-        // ...
+        // Aseguramos que los cálculos estén frescos antes de guardar
+        calcularTotal();
+
         if (idVendedorEncontrado == 0 || idClienteEncontrado == 0 || idAutoEncontrado == 0) {
-             JOptionPane.showMessageDialog(view, "Debe buscar y seleccionar Vendedor, Cliente y Auto.");
-             return;
+            JOptionPane.showMessageDialog(view, "Debe buscar y seleccionar Vendedor, Cliente y Auto.");
+            return;
         }
         ItemCombo pagoSel = (ItemCombo) view.cboxFormasPago.getSelectedItem();
         if (pagoSel == null || pagoSel.getId() == 0) {
-             JOptionPane.showMessageDialog(view, "Seleccione Forma de Pago");
-             return;
+            JOptionPane.showMessageDialog(view, "Seleccione Forma de Pago");
+            return;
         }
 
-        // Crear Objeto
         VentaDTO venta = new VentaDTO();
         venta.setNumeroFactura(view.txtNoFactura.getText());
         venta.setFechaVenta(Date.valueOf(LocalDate.now()));
@@ -182,38 +210,39 @@ public class RegistrarVentaController implements ActionListener {
         venta.setIdAuto(idAutoEncontrado);
         venta.setIdFormaPago(pagoSel.getId());
         
-        // --- CAMBIO CRÍTICO: Usamos Formato.remover() para guardar ---
-        // Leemos el precio base normal (usuario lo escribe)
-        venta.setPrecioBase(Double.parseDouble(view.txtPrecioBase.getText())); 
-        
-        // Leemos los campos calculados (que tienen signo $) usando remover()
-        venta.setImpuesto(Formato.remover(view.txtImpoVenta.getText()));
-        venta.setIva(Formato.remover(view.txtIVA.getText()));
-        venta.setTotalPagar(Formato.remover(view.txtTotalPagar.getText()));
-        // -------------------------------------------------------------
+        try {
+            // Leemos valores numéricos (usando remover para los formateados)
+            venta.setPrecioBase(Double.parseDouble(view.txtPrecioBase.getText()));
+            venta.setImpuesto(Formato.remover(view.txtImpoVenta.getText()));
+            venta.setIva(Formato.remover(view.txtIVA.getText()));
+            venta.setTotalPagar(Formato.remover(view.txtTotalPagar.getText()));
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(view, "Error en los valores numéricos. Verifique el precio.");
+            return;
+        }
 
         if (ventaDAO.registrar(venta)) {
             JOptionPane.showMessageDialog(view, "¡Venta Registrada!");
-            // --- AQUÍ GENERAMOS EL PDF ---
-            // 1. Completamos los datos visuales que faltan en el DTO para el PDF
+            
+            // --- PREPARAR PDF ---
             venta.setNombreVendedor(view.txtNombreVendedor.getText());
             venta.setNombreCliente(view.txtNombreCliente.getText());
-            venta.setNombreFormaPago(pagoSel.toString()); // ItemCombo devuelve nombre en toString
-            
-            // Armamos la descripción del auto (Marca + Linea + Color)
-            String descAuto = view.txtMarca.getText() + " " + view.txtLinea.getText() + " " + view.txtColorAuto.getText();
+            venta.setNombreFormaPago(pagoSel.toString());
+            String descAuto = view.txtMarca.getText() + " " + view.txtLinea.getText() + " " + 
+                              view.txtAnio.getText() + " - " + view.txtColorAuto.getText();
             venta.setDescripcionAuto(descAuto);
             
-            // 2. Llamamos al generador
+            // Generar PDF pasando la vista completa
             GeneradorPDF pdf = new GeneradorPDF();
-            pdf.generarFactura(venta);
-            // -----------------------------
+            pdf.generarFactura(venta, view);
+            
             listarVentas();
             limpiar();
         } else {
             JOptionPane.showMessageDialog(view, "Error al registrar venta");
         }
     }
+
     private void listarVentas() {
         List<VentaDTO> lista = ventaDAO.listar();
         DefaultTableModel model = new DefaultTableModel();
@@ -231,11 +260,7 @@ public class RegistrarVentaController implements ActionListener {
             fila[2] = v.getNombreVendedor();
             fila[3] = v.getDescripcionAuto();
             fila[4] = v.getNombreCliente();
-            
-            // --- CAMBIO: Formato visual para la tabla ---
             fila[5] = Formato.moneda(v.getTotalPagar());
-            // --------------------------------------------
-            
             model.addRow(fila);
         }
         view.tblVentasRealizadas.setModel(model);
@@ -262,11 +287,23 @@ public class RegistrarVentaController implements ActionListener {
         view.txtAnio.setText("");
         view.txtColorAuto.setText("");
         view.txtTipoMotor.setText("");
+        
         view.txtPrecioBase.setText("");
+        view.txtPrecioBase1.setText("");
         
         view.txtImpoVenta.setText("");
         view.txtIVA.setText("");
         view.txtTotalPagar.setText("");
         view.cboxFormasPago.setSelectedIndex(0);
+    }
+    private void limpiarCamposAuto() {
+        view.txtMarca.setText("");
+        view.txtLinea.setText("");
+        view.txtAnio.setText("");
+        view.txtColorAuto.setText("");
+        view.txtTipoMotor.setText("");
+        view.txtPrecioBase.setText("");
+        view.txtPrecioBase1.setText("");
+        idAutoEncontrado = 0;
     }
 }

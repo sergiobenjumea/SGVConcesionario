@@ -1,36 +1,31 @@
 package modelo.util;
 
 import modelo.dto.VentaDTO;
+import vistas.UIRegistrarventa; // Importamos la vista para leer datos extra
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.*;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.text.SimpleDateFormat;
-import java.awt.Desktop; // Para abrir el archivo automáticamente
+import java.awt.Desktop;
 
 public class GeneradorPDF {
     
     private String rutaDescargas;
     
     public GeneradorPDF() {
-        // Guardará en el Escritorio carpeta "Facturas"
         this.rutaDescargas = System.getProperty("user.home") + File.separator + "Desktop" + File.separator;
     }
     
-    public void generarFactura(VentaDTO venta) {
+    // AHORA RECIBE EL DTO Y LA VISTA
+    public void generarFactura(VentaDTO venta, UIRegistrarventa view) {
         try {
-            // 1. Crear carpeta si no existe
             String rutaCarpeta = rutaDescargas + "Facturas";
             File carpeta = new File(rutaCarpeta);
-            if (!carpeta.exists()) {
-                carpeta.mkdirs();
-            }
+            if (!carpeta.exists()) carpeta.mkdirs();
             
-            // 2. Definir nombre del archivo (Ej: Factura_FAC-001.pdf)
             String nombreArchivo = "Factura_" + venta.getNumeroFactura() + ".pdf";
             String rutaCompleta = rutaCarpeta + File.separator + nombreArchivo;
             
-            // 3. Crear Documento PDF
             Document document = new Document(PageSize.LETTER);
             PdfWriter.getInstance(document, new FileOutputStream(rutaCompleta));
             document.open();
@@ -50,83 +45,107 @@ public class GeneradorPDF {
             subtitulo.setSpacingAfter(20);
             document.add(subtitulo);
             
-            // --- DATOS GENERALES (Tabla invisible para organizar) ---
-            PdfPTable tablaDatos = new PdfPTable(2);
-            tablaDatos.setWidthPercentage(100);
-            tablaDatos.setSpacingAfter(20);
+            // --- TABLA 1: DATOS GENERALES ---
+            PdfPTable tablaInfo = new PdfPTable(2);
+            tablaInfo.setWidthPercentage(100);
             
-            addCelda(tablaDatos, "Fecha de Venta: " + venta.getFechaVenta().toString(), normalFont);
-            addCelda(tablaDatos, "Forma de Pago: " + venta.getNombreFormaPago(), normalFont);
-            addCelda(tablaDatos, "Vendedor: " + venta.getNombreVendedor(), normalFont);
-            addCelda(tablaDatos, "Cliente: " + venta.getNombreCliente(), normalFont);
+            addCelda(tablaInfo, "Fecha de Emisión:", subFont);
+            addCelda(tablaInfo, view.txtFecha.getText(), normalFont);
             
-            document.add(tablaDatos);
+            addCelda(tablaInfo, "Forma de Pago:", subFont);
+            addCelda(tablaInfo, view.cboxFormasPago.getSelectedItem().toString(), normalFont);
             
-            // --- DETALLE DEL PRODUCTO ---
-            Paragraph prodTitulo = new Paragraph("DETALLE DEL VEHÍCULO", subFont);
-            document.add(prodTitulo);
+            document.add(tablaInfo);
+            document.add(new Paragraph("\n"));
+
+            // --- TABLA 2: CLIENTE Y VENDEDOR ---
+            PdfPTable tablaPersonas = new PdfPTable(2);
+            tablaPersonas.setWidthPercentage(100);
             
-            PdfPTable tablaProd = new PdfPTable(2); // Descripción y Valor
-            tablaProd.setWidthPercentage(100);
-            tablaProd.setSpacingBefore(10);
-            tablaProd.setSpacingAfter(20);
+            // Columna Izquierda: Vendedor
+            PdfPCell celdaVendedor = new PdfPCell();
+            celdaVendedor.setBorder(Rectangle.BOX);
+            celdaVendedor.addElement(new Paragraph("DATOS DEL VENDEDOR", subFont));
+            celdaVendedor.addElement(new Paragraph("ID: " + view.txtIDVendedor.getText(), normalFont));
+            celdaVendedor.addElement(new Paragraph("Nombre: " + view.txtNombreVendedor.getText(), normalFont));
+            celdaVendedor.addElement(new Paragraph("Profesión: " + view.txtProfesionVendedor.getText(), normalFont));
+            tablaPersonas.addCell(celdaVendedor);
             
-            // Encabezados de tabla
-            PdfPCell c1 = new PdfPCell(new Phrase("Descripción", subFont));
-            c1.setBackgroundColor(BaseColor.LIGHT_GRAY);
-            c1.setHorizontalAlignment(Element.ALIGN_CENTER);
-            tablaProd.addCell(c1);
+            // Columna Derecha: Cliente
+            PdfPCell celdaCliente = new PdfPCell();
+            celdaCliente.setBorder(Rectangle.BOX);
+            celdaCliente.addElement(new Paragraph("DATOS DEL CLIENTE", subFont));
+            celdaCliente.addElement(new Paragraph("ID: " + view.txtIDCliente.getText(), normalFont));
+            celdaCliente.addElement(new Paragraph("Nombre: " + view.txtNombreCliente.getText(), normalFont));
+            celdaCliente.addElement(new Paragraph("Edad: " + view.txtEdadCliente.getText(), normalFont));
+            celdaCliente.addElement(new Paragraph("Email: " + view.txteMailCliente.getText(), normalFont));
+            tablaPersonas.addCell(celdaCliente);
             
-            PdfPCell c2 = new PdfPCell(new Phrase("Valor", subFont));
-            c2.setBackgroundColor(BaseColor.LIGHT_GRAY);
-            c2.setHorizontalAlignment(Element.ALIGN_CENTER);
-            tablaProd.addCell(c2);
+            document.add(tablaPersonas);
+            document.add(new Paragraph("\n"));
             
-            // Fila del Auto
-            tablaProd.addCell(new Phrase(venta.getDescripcionAuto(), normalFont));
+            // --- TABLA 3: DETALLE DEL VEHÍCULO ---
+            document.add(new Paragraph("DETALLE DEL VEHÍCULO", subFont));
             
-            // Usamos tu clase Formato para que se vea bonito en el PDF también
-            tablaProd.addCell(new Phrase(Formato.moneda(venta.getPrecioBase()), normalFont));
+            PdfPTable tablaAuto = new PdfPTable(4);
+            tablaAuto.setWidthPercentage(100);
+            tablaAuto.setSpacingBefore(5);
             
-            document.add(tablaProd);
+            // Encabezados
+            addCeldaGris(tablaAuto, "Código", subFont);
+            addCeldaGris(tablaAuto, "Marca / Línea", subFont);
+            addCeldaGris(tablaAuto, "Detalles", subFont);
+            addCeldaGris(tablaAuto, "Precio Base", subFont);
             
-            // --- TOTALES ---
+            // Datos
+            addCelda(tablaAuto, view.txtCodigoAuto.getText(), normalFont);
+            addCelda(tablaAuto, view.txtMarca.getText() + " " + view.txtLinea.getText(), normalFont);
+            
+            String detalles = "Año: " + view.txtAnio.getText() + "\n" +
+                              "Color: " + view.txtColorAuto.getText() + "\n" +
+                              "Motor: " + view.txtTipoMotor.getText();
+            addCelda(tablaAuto, detalles, normalFont);
+            
+            // Usamos el valor formateado de la nueva caja txtPrecioBase1
+            addCelda(tablaAuto, view.txtPrecioBase1.getText(), normalFont);
+            
+            document.add(tablaAuto);
+            
+            // --- TABLA 4: TOTALES ---
             PdfPTable tablaTotales = new PdfPTable(2);
             tablaTotales.setWidthPercentage(40);
             tablaTotales.setHorizontalAlignment(Element.ALIGN_RIGHT);
+            tablaTotales.setSpacingBefore(10);
             
             addCelda(tablaTotales, "Subtotal:", normalFont);
-            addCelda(tablaTotales, Formato.moneda(venta.getPrecioBase()), normalFont);
+            addCelda(tablaTotales, view.txtPrecioBase1.getText(), normalFont);
             
-            addCelda(tablaTotales, "Impuesto:", normalFont);
-            addCelda(tablaTotales, Formato.moneda(venta.getImpuesto()), normalFont);
+            addCelda(tablaTotales, "Impuesto Venta:", normalFont);
+            addCelda(tablaTotales, view.txtImpoVenta.getText(), normalFont);
             
             addCelda(tablaTotales, "IVA:", normalFont);
-            addCelda(tablaTotales, Formato.moneda(venta.getIva()), normalFont);
+            addCelda(tablaTotales, view.txtIVA.getText(), normalFont);
             
-            PdfPCell celdaTotalLabel = new PdfPCell(new Phrase("TOTAL:", subFont));
-            celdaTotalLabel.setBorder(Rectangle.TOP);
-            tablaTotales.addCell(celdaTotalLabel);
+            PdfPCell totalLbl = new PdfPCell(new Phrase("TOTAL A PAGAR:", subFont));
+            totalLbl.setBorder(Rectangle.TOP);
+            tablaTotales.addCell(totalLbl);
             
-            PdfPCell celdaTotalValue = new PdfPCell(new Phrase(Formato.moneda(venta.getTotalPagar()), subFont));
-            celdaTotalValue.setBorder(Rectangle.TOP);
-            tablaTotales.addCell(celdaTotalValue);
+            PdfPCell totalVal = new PdfPCell(new Phrase(view.txtTotalPagar.getText(), subFont));
+            totalVal.setBorder(Rectangle.TOP);
+            tablaTotales.addCell(totalVal);
             
             document.add(tablaTotales);
             
             // --- PIE DE PAGINA ---
-            Paragraph fin = new Paragraph("\n\nGracias por su compra.", normalFont);
+            Paragraph fin = new Paragraph("\nGracias por su compra en nuestro concesionario.", normalFont);
             fin.setAlignment(Element.ALIGN_CENTER);
             document.add(fin);
             
             document.close();
-            System.out.println("PDF Generado: " + rutaCompleta);
-            
-            // Intentar abrir el archivo automáticamente
             abrirArchivo(rutaCompleta);
             
         } catch (Exception e) {
-            System.err.println("Error generando PDF: " + e.getMessage());
+            System.err.println("Error PDF: " + e.getMessage());
         }
     }
     
@@ -136,16 +155,19 @@ public class GeneradorPDF {
         tabla.addCell(cell);
     }
     
+    private void addCeldaGris(PdfPTable tabla, String texto, Font fuente) {
+        PdfPCell cell = new PdfPCell(new Phrase(texto, fuente));
+        cell.setBackgroundColor(BaseColor.LIGHT_GRAY);
+        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        tabla.addCell(cell);
+    }
+    
     private void abrirArchivo(String ruta) {
         try {
             File archivo = new File(ruta);
-            if (archivo.exists()) {
-                if (Desktop.isDesktopSupported()) {
-                    Desktop.getDesktop().open(archivo);
-                }
+            if (archivo.exists() && Desktop.isDesktopSupported()) {
+                Desktop.getDesktop().open(archivo);
             }
-        } catch (Exception e) {
-            // No pasa nada si falla abrirlo, el archivo ya está creado
-        }
+        } catch (Exception e) {}
     }
 }
