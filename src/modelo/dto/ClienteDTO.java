@@ -1,26 +1,25 @@
 package modelo.dto;
 
-import java.io.Serializable;
-import java.util.Date;
+import java.sql.Date; // Usaremos java.sql.Date para la base de datos
 
-public class ClienteDTO implements Serializable {
-    private int idCliente;
+public class ClienteDTO {
+    private int id;
     private int idTipoIdentificacion;
     private String identificacion;
     private String nombre;
     private Date fechaNacimiento;
     private int edad;
     private String email;
-    private Date fechaRegistro;
+    
+    // Auxiliar para mostrar en la tabla
+    private String nombreTipoId;
 
-    // Para mostrar correctamente en ComboBox/vistas
-    private String codigoTipoIdentificacion;
-    private String nombreTipoIdentificacion;
+    public ClienteDTO() {
+    }
 
-    public ClienteDTO() {}
-
-    public int getIdCliente() { return idCliente; }
-    public void setIdCliente(int idCliente) { this.idCliente = idCliente; }
+    // Getters y Setters
+    public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
 
     public int getIdTipoIdentificacion() { return idTipoIdentificacion; }
     public void setIdTipoIdentificacion(int idTipoIdentificacion) { this.idTipoIdentificacion = idTipoIdentificacion; }
@@ -40,17 +39,6 @@ public class ClienteDTO implements Serializable {
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
 
-    public Date getFechaRegistro() { return fechaRegistro; }
-    public void setFechaRegistro(Date fechaRegistro) { this.fechaRegistro = fechaRegistro; }
-
-    public String getCodigoTipoIdentificacion() { return codigoTipoIdentificacion; }
-    public void setCodigoTipoIdentificacion(String codigoTipoIdentificacion) { this.codigoTipoIdentificacion = codigoTipoIdentificacion; }
-
-    public String getNombreTipoIdentificacion() { return nombreTipoIdentificacion; }
-    public void setNombreTipoIdentificacion(String nombreTipoIdentificacion) { this.nombreTipoIdentificacion = nombreTipoIdentificacion; }
-
-    @Override
-    public String toString() {
-        return "Cliente: " + nombre + " (" + codigoTipoIdentificacion + " " + identificacion + ")";
-    }
+    public String getNombreTipoId() { return nombreTipoId; }
+    public void setNombreTipoId(String nombreTipoId) { this.nombreTipoId = nombreTipoId; }
 }

@@ -14,7 +14,6 @@ public class UIAutomoviles extends javax.swing.JFrame {
 
         jLabel7 = new javax.swing.JLabel();
         jButton3 = new javax.swing.JButton();
-        lblCodigoAuto = new javax.swing.JLabel();
         lblMarca = new javax.swing.JLabel();
         lblModelo = new javax.swing.JLabel();
         lblColor = new javax.swing.JLabel();
@@ -28,7 +27,6 @@ public class UIAutomoviles extends javax.swing.JFrame {
         btnConsultarTodosAutomovil = new javax.swing.JButton();
         sptblAutomovil = new javax.swing.JScrollPane();
         tblAutomovil = new javax.swing.JTable();
-        txtCodigo = new javax.swing.JTextField();
         txtPrecioBase = new javax.swing.JTextField();
         txtColor = new javax.swing.JTextField();
         cboxTipoMotor = new javax.swing.JComboBox();
@@ -45,8 +43,6 @@ public class UIAutomoviles extends javax.swing.JFrame {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("Gestión de Automóviles");
-
-        lblCodigoAuto.setText("Código");
 
         lblMarca.setText("Marca");
 
@@ -89,6 +85,12 @@ public class UIAutomoviles extends javax.swing.JFrame {
         ));
         sptblAutomovil.setViewportView(tblAutomovil);
 
+        txtPrecioBase.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtPrecioBaseActionPerformed(evt);
+            }
+        });
+
         lblLinea.setText("Línea");
 
         cboxLinea.addActionListener(new java.awt.event.ActionListener() {
@@ -110,39 +112,39 @@ public class UIAutomoviles extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addGap(41, 41, 41)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(lblPrecioBase)
-                            .addComponent(lblModelo))
-                        .addGap(53, 53, 53)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(txtPrecioBase, javax.swing.GroupLayout.PREFERRED_SIZE, 132, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(cboxAnio, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(54, 54, 54)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(lblColor)
-                            .addComponent(lblTipoMotor))
-                        .addGap(56, 56, 56)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(layout.createSequentialGroup()
-                                .addComponent(cboxTipoMotor, javax.swing.GroupLayout.PREFERRED_SIZE, 136, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 48, Short.MAX_VALUE))
-                            .addComponent(txtColor)))
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(lblCodigoAuto)
-                        .addGap(18, 18, 18)
-                        .addComponent(txtCodigo, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(39, 39, 39)
-                        .addComponent(lblMarca)
-                        .addGap(18, 18, 18)
-                        .addComponent(cboxMarca, javax.swing.GroupLayout.PREFERRED_SIZE, 146, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(lblLinea)
-                        .addGap(18, 18, 18)
-                        .addComponent(cboxLinea, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                     .addComponent(sptblAutomovil)
                     .addComponent(jSeparator1)
-                    .addComponent(jSeparator2))
+                    .addComponent(jSeparator2)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(layout.createSequentialGroup()
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(lblMarca)
+                                    .addComponent(lblModelo))
+                                .addGap(18, 18, 18)
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(cboxAnio, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(cboxMarca, javax.swing.GroupLayout.PREFERRED_SIZE, 163, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(lblPrecioBase)
+                                .addGap(26, 26, 26)
+                                .addComponent(txtPrecioBase, javax.swing.GroupLayout.PREFERRED_SIZE, 163, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addGap(50, 50, 50)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(lblLinea)
+                                .addGap(18, 18, 18)
+                                .addComponent(cboxLinea, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
+                                    .addComponent(lblColor)
+                                    .addGap(18, 18, 18)
+                                    .addComponent(txtColor))
+                                .addGroup(layout.createSequentialGroup()
+                                    .addComponent(lblTipoMotor)
+                                    .addGap(18, 18, 18)
+                                    .addComponent(cboxTipoMotor, javax.swing.GroupLayout.PREFERRED_SIZE, 136, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                        .addGap(86, 86, 86)))
                 .addGap(57, 57, 57))
             .addGroup(layout.createSequentialGroup()
                 .addGap(306, 306, 306)
@@ -157,7 +159,7 @@ public class UIAutomoviles extends javax.swing.JFrame {
                 .addComponent(btnModificarAutomovil)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(btnEliminarAutomovil)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 82, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(btnConsultarTodosAutomovil, javax.swing.GroupLayout.PREFERRED_SIZE, 154, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(75, 75, 75))
         );
@@ -169,14 +171,11 @@ public class UIAutomoviles extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jSeparator2, javax.swing.GroupLayout.PREFERRED_SIZE, 10, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(2, 2, 2)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(txtCodigo, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(lblCodigoAuto)
-                        .addComponent(lblMarca)
-                        .addComponent(lblLinea)
-                        .addComponent(cboxLinea, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(cboxMarca, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(lblMarca)
+                    .addComponent(lblLinea)
+                    .addComponent(cboxLinea, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(cboxMarca, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(22, 22, 22)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(lblModelo)
@@ -214,6 +213,10 @@ public class UIAutomoviles extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_cboxMarcaActionPerformed
 
+    private void txtPrecioBaseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtPrecioBaseActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtPrecioBaseActionPerformed
+
  
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -230,7 +233,6 @@ public class UIAutomoviles extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel7;
     public javax.swing.JSeparator jSeparator1;
     public javax.swing.JSeparator jSeparator2;
-    public javax.swing.JLabel lblCodigoAuto;
     public javax.swing.JLabel lblColor;
     public javax.swing.JLabel lblDatosdelAutomovil;
     public javax.swing.JLabel lblLinea;
@@ -240,7 +242,6 @@ public class UIAutomoviles extends javax.swing.JFrame {
     public javax.swing.JLabel lblTipoMotor;
     public javax.swing.JScrollPane sptblAutomovil;
     public javax.swing.JTable tblAutomovil;
-    public javax.swing.JTextField txtCodigo;
     public javax.swing.JTextField txtColor;
     public javax.swing.JTextField txtPrecioBase;
     // End of variables declaration//GEN-END:variables

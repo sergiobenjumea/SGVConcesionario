@@ -136,10 +136,23 @@ public class UIPrincipal extends javax.swing.JFrame {
 
    
 public static void main(String args[]) {
-    
-        new PrincipalController(new UIPrincipal());
-}
+    // Look and Feel (Opcional)
+    try {
+        for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+            if ("Nimbus".equals(info.getName())) {
+                javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                break;
+            }
+        }
+    } catch (Exception ex) {}
 
+    java.awt.EventQueue.invokeLater(new Runnable() {
+        public void run() {
+            // Iniciar la aplicación con el controlador
+            new PrincipalController(new UIPrincipal());
+        }
+    });
+}
     // Variables declaration - do not modify//GEN-BEGIN:variables
     public javax.swing.JMenuBar mbPrincipal;
     public javax.swing.JMenu menuConsultas;

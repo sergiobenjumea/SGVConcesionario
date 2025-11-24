@@ -15,9 +15,6 @@ public class UIFormasPago extends javax.swing.JFrame {
         jSeparator1 = new javax.swing.JSeparator();
         jSeparator2 = new javax.swing.JSeparator();
         lblCodigo = new javax.swing.JLabel();
-        cboxCodigo = new javax.swing.JComboBox();
-        lblDescripciondelPago = new javax.swing.JLabel();
-        txtDescripcion = new javax.swing.JTextField();
         btnGuardarFormasPago = new javax.swing.JButton();
         btnConsultarFormasPago = new javax.swing.JButton();
         btnModificarFormasPago = new javax.swing.JButton();
@@ -25,6 +22,7 @@ public class UIFormasPago extends javax.swing.JFrame {
         btnConsultarTodosFormasPago = new javax.swing.JButton();
         spFormasPago = new javax.swing.JScrollPane();
         jTable1 = new javax.swing.JTable();
+        txtFormasPago = new javax.swing.JTextField();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("Formas de Pago");
@@ -32,8 +30,6 @@ public class UIFormasPago extends javax.swing.JFrame {
         lblFormasdePago.setText("Formas de Pago");
 
         lblCodigo.setText("Forma de Pago");
-
-        lblDescripciondelPago.setText("Descripcion:");
 
         btnGuardarFormasPago.setText("Guardar");
 
@@ -76,25 +72,16 @@ public class UIFormasPago extends javax.swing.JFrame {
         ));
         spFormasPago.setViewportView(jTable1);
 
+        txtFormasPago.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtFormasPagoActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(309, 309, 309)
-                        .addComponent(lblFormasdePago))
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(81, 81, 81)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(lblDescripciondelPago)
-                            .addComponent(lblCodigo))
-                        .addGap(18, 18, 18)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(txtDescripcion, javax.swing.GroupLayout.DEFAULT_SIZE, 119, Short.MAX_VALUE)
-                            .addComponent(cboxCodigo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addContainerGap(42, Short.MAX_VALUE)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
@@ -102,6 +89,17 @@ public class UIFormasPago extends javax.swing.JFrame {
                     .addComponent(jSeparator2, javax.swing.GroupLayout.DEFAULT_SIZE, 640, Short.MAX_VALUE)
                     .addComponent(jSeparator1))
                 .addGap(44, 44, 44))
+            .addGroup(layout.createSequentialGroup()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(309, 309, 309)
+                        .addComponent(lblFormasdePago))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(238, 238, 238)
+                        .addComponent(lblCodigo)
+                        .addGap(27, 27, 27)
+                        .addComponent(txtFormasPago, javax.swing.GroupLayout.PREFERRED_SIZE, 140, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(233, Short.MAX_VALUE))
             .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                 .addGroup(layout.createSequentialGroup()
                     .addGap(79, 79, 79)
@@ -123,15 +121,11 @@ public class UIFormasPago extends javax.swing.JFrame {
                 .addComponent(lblFormasdePago)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, 10, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(lblCodigo)
-                    .addComponent(cboxCodigo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(18, 18, 18)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(lblDescripciondelPago)
-                    .addComponent(txtDescripcion, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(50, 50, 50)
+                    .addComponent(lblCodigo)
+                    .addComponent(txtFormasPago, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(79, 79, 79)
                 .addComponent(jSeparator2, javax.swing.GroupLayout.PREFERRED_SIZE, 10, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 81, Short.MAX_VALUE)
                 .addComponent(spFormasPago, javax.swing.GroupLayout.PREFERRED_SIZE, 145, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -159,6 +153,10 @@ public class UIFormasPago extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_btnConsultarTodosFormasPagoActionPerformed
 
+    private void txtFormasPagoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtFormasPagoActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtFormasPagoActionPerformed
+
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -167,14 +165,12 @@ public class UIFormasPago extends javax.swing.JFrame {
     public javax.swing.JButton btnEliminarFormasPago;
     public javax.swing.JButton btnGuardarFormasPago;
     public javax.swing.JButton btnModificarFormasPago;
-    public javax.swing.JComboBox cboxCodigo;
     public javax.swing.JSeparator jSeparator1;
     public javax.swing.JSeparator jSeparator2;
     public javax.swing.JTable jTable1;
     public javax.swing.JLabel lblCodigo;
-    public javax.swing.JLabel lblDescripciondelPago;
     public javax.swing.JLabel lblFormasdePago;
     public javax.swing.JScrollPane spFormasPago;
-    public javax.swing.JTextField txtDescripcion;
+    public javax.swing.JTextField txtFormasPago;
     // End of variables declaration//GEN-END:variables
 }

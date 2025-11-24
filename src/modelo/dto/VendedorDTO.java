@@ -1,26 +1,19 @@
 package modelo.dto;
 
-import java.io.Serializable;
-import java.util.Date;
+import java.sql.Date;
 
-/**
- * DTO para la tabla vendedores
- */
-public class VendedorDTO implements Serializable {
-    private int idVendedor;
-    private String identificacion;
+public class VendedorDTO {
+    private int id;
+    private String identificacion; // Corresponde al txtidVendedor
     private String nombre;
     private String profesion;
     private Date fechaContratacion;
-    private String estado;
 
-    // Campos adicionales útiles para vistas (opcional)
-    private int totalVentas; // Usado para reportes o estadísticas
+    public VendedorDTO() {
+    }
 
-    public VendedorDTO() {}
-
-    public int getIdVendedor() { return idVendedor; }
-    public void setIdVendedor(int idVendedor) { this.idVendedor = idVendedor; }
+    public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
 
     public String getIdentificacion() { return identificacion; }
     public void setIdentificacion(String identificacion) { this.identificacion = identificacion; }
@@ -33,15 +26,4 @@ public class VendedorDTO implements Serializable {
 
     public Date getFechaContratacion() { return fechaContratacion; }
     public void setFechaContratacion(Date fechaContratacion) { this.fechaContratacion = fechaContratacion; }
-
-    public String getEstado() { return estado; }
-    public void setEstado(String estado) { this.estado = estado; }
-
-    public int getTotalVentas() { return totalVentas; }
-    public void setTotalVentas(int totalVentas) { this.totalVentas = totalVentas; }
-
-    @Override
-    public String toString() {
-        return "Vendedor: " + nombre + " (" + identificacion + ")";
-    }
 }

@@ -6,199 +6,146 @@ import com.itextpdf.text.pdf.*;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
+import java.awt.Desktop; // Para abrir el archivo automáticamente
 
 public class GeneradorPDF {
     
     private String rutaDescargas;
     
     public GeneradorPDF() {
-        // Ruta del escritorio
-        this.rutaDescargas = System.getProperty("user.home") + "/Desktop/";
+        // Guardará en el Escritorio carpeta "Facturas"
+        this.rutaDescargas = System.getProperty("user.home") + File.separator + "Desktop" + File.separator;
     }
     
-    /**
-     * Genera un PDF de factura para una venta
-     */
-    public String generarFactura(VentaDTO venta) {
+    public void generarFactura(VentaDTO venta) {
         try {
-            // Crear carpeta de facturas si no existe
-            String rutaFacturas = rutaDescargas + "Facturas/";
-            File carpeta = new File(rutaFacturas);
+            // 1. Crear carpeta si no existe
+            String rutaCarpeta = rutaDescargas + "Facturas";
+            File carpeta = new File(rutaCarpeta);
             if (!carpeta.exists()) {
                 carpeta.mkdirs();
             }
             
-            // Nombre del archivo
+            // 2. Definir nombre del archivo (Ej: Factura_FAC-001.pdf)
             String nombreArchivo = "Factura_" + venta.getNumeroFactura() + ".pdf";
-            String rutaCompleta = rutaFacturas + nombreArchivo;
+            String rutaCompleta = rutaCarpeta + File.separator + nombreArchivo;
             
-            // Crear documento
+            // 3. Crear Documento PDF
             Document document = new Document(PageSize.LETTER);
             PdfWriter.getInstance(document, new FileOutputStream(rutaCompleta));
             document.open();
             
-            // ===== FUENTES =====
+            // --- FUENTES ---
             Font tituloFont = new Font(Font.FontFamily.HELVETICA, 18, Font.BOLD);
-            Font subtituloFont = new Font(Font.FontFamily.HELVETICA, 14, Font.BOLD);
-            Font seccionFont = new Font(Font.FontFamily.HELVETICA, 12, Font.BOLD);
+            Font subFont = new Font(Font.FontFamily.HELVETICA, 12, Font.BOLD);
             Font normalFont = new Font(Font.FontFamily.HELVETICA, 10, Font.NORMAL);
             
-            // ===== ENCABEZADO =====
+            // --- ENCABEZADO ---
             Paragraph titulo = new Paragraph("CONCESIONARIO DE AUTOMÓVILES", tituloFont);
             titulo.setAlignment(Element.ALIGN_CENTER);
             document.add(titulo);
             
-            Paragraph subtitulo = new Paragraph("FACTURA DE VENTA", subtituloFont);
+            Paragraph subtitulo = new Paragraph("FACTURA DE VENTA N° " + venta.getNumeroFactura(), subFont);
             subtitulo.setAlignment(Element.ALIGN_CENTER);
             subtitulo.setSpacingAfter(20);
             document.add(subtitulo);
             
-            // ===== INFORMACIÓN GENERAL =====
-            PdfPTable headerTable = new PdfPTable(4);
-            headerTable.setWidthPercentage(100);
-            headerTable.setSpacingAfter(15);
+            // --- DATOS GENERALES (Tabla invisible para organizar) ---
+            PdfPTable tablaDatos = new PdfPTable(2);
+            tablaDatos.setWidthPercentage(100);
+            tablaDatos.setSpacingAfter(20);
             
-            addCell(headerTable, "No. Factura: " + venta.getNumeroFactura(), normalFont);
-            addCell(headerTable, "Fecha: " + formatearFecha(venta.getFechaVenta()), normalFont);
-            addCell(headerTable, "Estado: " + venta.getEstado(), normalFont);
-            addCell(headerTable, "Forma Pago: " + venta.getDescripcionFormaPago(), normalFont);
+            addCelda(tablaDatos, "Fecha de Venta: " + venta.getFechaVenta().toString(), normalFont);
+            addCelda(tablaDatos, "Forma de Pago: " + venta.getNombreFormaPago(), normalFont);
+            addCelda(tablaDatos, "Vendedor: " + venta.getNombreVendedor(), normalFont);
+            addCelda(tablaDatos, "Cliente: " + venta.getNombreCliente(), normalFont);
             
-            document.add(headerTable);
+            document.add(tablaDatos);
             
-            // ===== DATOS DEL CLIENTE =====
-            Paragraph clienteTitulo = new Paragraph("DATOS DEL CLIENTE", seccionFont);
-            clienteTitulo.setSpacingBefore(10);
-            document.add(clienteTitulo);
+            // --- DETALLE DEL PRODUCTO ---
+            Paragraph prodTitulo = new Paragraph("DETALLE DEL VEHÍCULO", subFont);
+            document.add(prodTitulo);
             
-            PdfPTable clienteTable = new PdfPTable(2);
-            clienteTable.setWidthPercentage(100);
-            clienteTable.setSpacingAfter(15);
+            PdfPTable tablaProd = new PdfPTable(2); // Descripción y Valor
+            tablaProd.setWidthPercentage(100);
+            tablaProd.setSpacingBefore(10);
+            tablaProd.setSpacingAfter(20);
             
-            addCell(clienteTable, "Nombre:", normalFont);
-            addCell(clienteTable, venta.getNombreCliente(), normalFont);
-            addCell(clienteTable, "ID Cliente:", normalFont);
-            addCell(clienteTable, String.valueOf(venta.getIdCliente()), normalFont);
+            // Encabezados de tabla
+            PdfPCell c1 = new PdfPCell(new Phrase("Descripción", subFont));
+            c1.setBackgroundColor(BaseColor.LIGHT_GRAY);
+            c1.setHorizontalAlignment(Element.ALIGN_CENTER);
+            tablaProd.addCell(c1);
             
-            document.add(clienteTable);
+            PdfPCell c2 = new PdfPCell(new Phrase("Valor", subFont));
+            c2.setBackgroundColor(BaseColor.LIGHT_GRAY);
+            c2.setHorizontalAlignment(Element.ALIGN_CENTER);
+            tablaProd.addCell(c2);
             
-            // ===== DATOS DEL VENDEDOR =====
-            Paragraph vendedorTitulo = new Paragraph("DATOS DEL VENDEDOR", seccionFont);
-            document.add(vendedorTitulo);
+            // Fila del Auto
+            tablaProd.addCell(new Phrase(venta.getDescripcionAuto(), normalFont));
             
-            PdfPTable vendedorTable = new PdfPTable(2);
-            vendedorTable.setWidthPercentage(100);
-            vendedorTable.setSpacingAfter(15);
+            // Usamos tu clase Formato para que se vea bonito en el PDF también
+            tablaProd.addCell(new Phrase(Formato.moneda(venta.getPrecioBase()), normalFont));
             
-            addCell(vendedorTable, "Nombre:", normalFont);
-            addCell(vendedorTable, venta.getNombreVendedor(), normalFont);
-            addCell(vendedorTable, "ID Vendedor:", normalFont);
-            addCell(vendedorTable, String.valueOf(venta.getIdVendedor()), normalFont);
+            document.add(tablaProd);
             
-            document.add(vendedorTable);
+            // --- TOTALES ---
+            PdfPTable tablaTotales = new PdfPTable(2);
+            tablaTotales.setWidthPercentage(40);
+            tablaTotales.setHorizontalAlignment(Element.ALIGN_RIGHT);
             
-            // ===== DATOS DEL VEHÍCULO =====
-            Paragraph vehiculoTitulo = new Paragraph("DATOS DEL VEHÍCULO", seccionFont);
-            document.add(vehiculoTitulo);
+            addCelda(tablaTotales, "Subtotal:", normalFont);
+            addCelda(tablaTotales, Formato.moneda(venta.getPrecioBase()), normalFont);
             
-            PdfPTable vehiculoTable = new PdfPTable(2);
-            vehiculoTable.setWidthPercentage(100);
-            vehiculoTable.setSpacingAfter(15);
+            addCelda(tablaTotales, "Impuesto:", normalFont);
+            addCelda(tablaTotales, Formato.moneda(venta.getImpuesto()), normalFont);
             
-            addCell(vehiculoTable, "Código:", normalFont);
-            addCell(vehiculoTable, venta.getCodigoAuto(), normalFont);
-            addCell(vehiculoTable, "ID Automóvil:", normalFont);
-            addCell(vehiculoTable, String.valueOf(venta.getIdAuto()), normalFont);
+            addCelda(tablaTotales, "IVA:", normalFont);
+            addCelda(tablaTotales, Formato.moneda(venta.getIva()), normalFont);
             
-            document.add(vehiculoTable);
+            PdfPCell celdaTotalLabel = new PdfPCell(new Phrase("TOTAL:", subFont));
+            celdaTotalLabel.setBorder(Rectangle.TOP);
+            tablaTotales.addCell(celdaTotalLabel);
             
-            // ===== RESUMEN DE FACTURA =====
-            Paragraph resumenTitulo = new Paragraph("RESUMEN DE FACTURA", seccionFont);
-            document.add(resumenTitulo);
+            PdfPCell celdaTotalValue = new PdfPCell(new Phrase(Formato.moneda(venta.getTotalPagar()), subFont));
+            celdaTotalValue.setBorder(Rectangle.TOP);
+            tablaTotales.addCell(celdaTotalValue);
             
-            PdfPTable resumenTable = new PdfPTable(2);
-            resumenTable.setWidthPercentage(60);
-            resumenTable.setHorizontalAlignment(Element.ALIGN_RIGHT);
-            resumenTable.setSpacingAfter(20);
+            document.add(tablaTotales);
             
-            addCell(resumenTable, "Precio Base:", normalFont);
-            addCell(resumenTable, String.format("$%,.2f", venta.getPrecioBase()), normalFont);
+            // --- PIE DE PAGINA ---
+            Paragraph fin = new Paragraph("\n\nGracias por su compra.", normalFont);
+            fin.setAlignment(Element.ALIGN_CENTER);
+            document.add(fin);
             
-            addCell(resumenTable, "Impuesto de Venta (15%):", normalFont);
-            addCell(resumenTable, String.format("$%,.2f", venta.getImpuestoVenta()), normalFont);
-            
-            addCell(resumenTable, "IVA (19%):", normalFont);
-            addCell(resumenTable, String.format("$%,.2f", venta.getIva()), normalFont);
-            
-            PdfPCell totalLabel = new PdfPCell(new Phrase("TOTAL A PAGAR:", seccionFont));
-            totalLabel.setBorder(PdfPCell.NO_BORDER);
-            totalLabel.setHorizontalAlignment(Element.ALIGN_RIGHT);
-            resumenTable.addCell(totalLabel);
-            
-            PdfPCell totalValue = new PdfPCell(new Phrase(String.format("$%,.2f", venta.getTotalPagar()), seccionFont));
-            totalValue.setBorder(PdfPCell.NO_BORDER);
-            totalValue.setHorizontalAlignment(Element.ALIGN_RIGHT);
-            resumenTable.addCell(totalValue);
-            
-            document.add(resumenTable);
-            
-            // ===== PIE DE PÁGINA =====
-            Paragraph gracias = new Paragraph("Gracias por su compra", normalFont);
-            gracias.setAlignment(Element.ALIGN_CENTER);
-            gracias.setSpacingBefore(30);
-            document.add(gracias);
-            
-            Paragraph sistema = new Paragraph("Sistema de Gestión de Concesionario", new Font(Font.FontFamily.HELVETICA, 9, Font.ITALIC));
-            sistema.setAlignment(Element.ALIGN_CENTER);
-            document.add(sistema);
-            
-            // Cerrar documento
             document.close();
+            System.out.println("PDF Generado: " + rutaCompleta);
             
-            System.out.println("✅ PDF generado exitosamente: " + rutaCompleta);
-            return rutaCompleta;
+            // Intentar abrir el archivo automáticamente
+            abrirArchivo(rutaCompleta);
             
         } catch (Exception e) {
-            System.err.println("❌ Error al generar PDF");
-            e.printStackTrace();
-            return null;
+            System.err.println("Error generando PDF: " + e.getMessage());
         }
     }
     
-    /**
-     * Método auxiliar para agregar celdas a la tabla
-     */
-    private void addCell(PdfPTable table, String text, Font font) {
-        PdfPCell cell = new PdfPCell(new Phrase(text, font));
-        cell.setBorder(PdfPCell.NO_BORDER);
-        cell.setPadding(5);
-        table.addCell(cell);
+    private void addCelda(PdfPTable tabla, String texto, Font fuente) {
+        PdfPCell cell = new PdfPCell(new Phrase(texto, fuente));
+        cell.setBorder(Rectangle.NO_BORDER);
+        tabla.addCell(cell);
     }
     
-    /**
-     * Formatea una fecha al formato dd/MM/yyyy
-     */
-    private String formatearFecha(java.util.Date fecha) {
-        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
-        return sdf.format(fecha);
-    }
-    
-    /**
-     * Abre el PDF automáticamente después de generarlo
-     */
-    public void abrirPDF(String rutaArchivo) {
+    private void abrirArchivo(String ruta) {
         try {
-            if (System.getProperty("os.name").toLowerCase().contains("mac")) {
-                Runtime.getRuntime().exec(new String[]{"open", rutaArchivo});
-            } else if (System.getProperty("os.name").toLowerCase().contains("win")) {
-                Runtime.getRuntime().exec(new String[]{"cmd", "/c", "start", rutaArchivo});
-            } else {
-                // Linux
-                Runtime.getRuntime().exec(new String[]{"xdg-open", rutaArchivo});
+            File archivo = new File(ruta);
+            if (archivo.exists()) {
+                if (Desktop.isDesktopSupported()) {
+                    Desktop.getDesktop().open(archivo);
+                }
             }
-            System.out.println("✅ Abriendo PDF...");
         } catch (Exception e) {
-            System.err.println("❌ Error al abrir PDF");
-            e.printStackTrace();
+            // No pasa nada si falla abrirlo, el archivo ya está creado
         }
     }
 }

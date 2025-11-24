@@ -1,151 +1,143 @@
 package Controladores;
 
-import modelo.dao.FormaPagoDAO;
-import modelo.dto.FormaPagoDTO;
+import modelo.dto.FormasPagoDTO;
+import modelo.dao.FormasPagoDAO;
 import vistas.UIFormasPago;
 
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.List;
+import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
 
 public class FormasPagoController implements ActionListener {
 
-    private UIFormasPago vista;
-    private FormaPagoDAO formaPagoDAO;
-    private DefaultTableModel modeloTabla;
-    private FormaPagoDTO formaActual;
+    private UIFormasPago view;
+    private FormasPagoDAO dao;
+    private int idSeleccionado = 0; // Para guardar el ID al hacer clic en la tabla
 
-    public FormasPagoController(UIFormasPago vista) {
-        this.vista = vista;
-        this.formaPagoDAO = new FormaPagoDAO();
+    public FormasPagoController(UIFormasPago view) {
+        this.view = view;
+        this.dao = new FormasPagoDAO();
 
-        modeloTabla = (DefaultTableModel) vista.jTable1.getModel();
-        modeloTabla.setRowCount(0);
-        modeloTabla.setColumnIdentifiers(new String[]{"Código", "Descripción"});
+        this.view.setLocationRelativeTo(null);
+        listarFormasPago();
 
-        cargarCboxCodigo();
+        // Listeners de Botones
+        this.view.btnGuardarFormasPago.addActionListener(this);
+        this.view.btnConsultarTodosFormasPago.addActionListener(this);
+        this.view.btnConsultarFormasPago.addActionListener(this); // Botón Consultar (Listar)
+        this.view.btnModificarFormasPago.addActionListener(this);
+        this.view.btnEliminarFormasPago.addActionListener(this);
 
-        this.vista.btnGuardarFormasPago.addActionListener(this);
-        this.vista.btnConsultarFormasPago.addActionListener(this);
-        this.vista.btnModificarFormasPago.addActionListener(this);
-        this.vista.btnEliminarFormasPago.addActionListener(this);
-        this.vista.btnConsultarTodosFormasPago.addActionListener(this);
+        // Listener de la Tabla (Para editar/eliminar)
+        this.view.jTable1.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int fila = view.jTable1.rowAtPoint(e.getPoint());
+                if (fila > -1) {
+                    // Columna 0 es ID, Columna 1 es Nombre
+                    idSeleccionado = (int) view.jTable1.getValueAt(fila, 0);
+                    view.txtFormasPago.setText(view.jTable1.getValueAt(fila, 1).toString());
+                }
+            }
+        });
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        if (e.getSource() == vista.btnGuardarFormasPago)      guardarForma();
-        else if (e.getSource() == vista.btnConsultarFormasPago) consultarForma();
-        else if (e.getSource() == vista.btnModificarFormasPago) modificarForma();
-        else if (e.getSource() == vista.btnEliminarFormasPago)  eliminarForma();
-        else if (e.getSource() == vista.btnConsultarTodosFormasPago) consultarTodos();
-    }
-
-    private void cargarCboxCodigo() {
-        vista.cboxCodigo.removeAllItems();
-        vista.cboxCodigo.addItem(null);
-        for (FormaPagoDTO f : formaPagoDAO.listarFormasPago()) {
-            vista.cboxCodigo.addItem(f); // El combo muestra la descripción gracias al toString()
+        if (e.getSource() == view.btnGuardarFormasPago) {
+            guardar();
+        } else if (e.getSource() == view.btnConsultarTodosFormasPago || e.getSource() == view.btnConsultarFormasPago) {
+            listarFormasPago();
+        } else if (e.getSource() == view.btnModificarFormasPago) {
+            modificar();
+        } else if (e.getSource() == view.btnEliminarFormasPago) {
+            eliminar();
         }
     }
 
-    private void guardarForma() {
-        String codigo = vista.cboxCodigo.getSelectedItem() != null ?
-            ((FormaPagoDTO)vista.cboxCodigo.getSelectedItem()).getCodigoForma() :
-            vista.txtDescripcion.getText().trim(); // Si quieres permitir agregar desde texto
-        String descripcion = vista.txtDescripcion.getText().trim();
+    // --- MÉTODOS CRUD ---
 
-        if (codigo.isEmpty() || descripcion.isEmpty()) {
-            JOptionPane.showMessageDialog(vista, "Complete todos los campos.", "Error", JOptionPane.WARNING_MESSAGE);
+    private void guardar() {
+        if (validar()) {
+            FormasPagoDTO fp = new FormasPagoDTO();
+            fp.setNombre(view.txtFormasPago.getText());
+            
+            if (dao.registrar(fp)) {
+                JOptionPane.showMessageDialog(view, "Forma de Pago guardada");
+                listarFormasPago();
+                limpiar();
+            } else {
+                JOptionPane.showMessageDialog(view, "Error al guardar");
+            }
+        }
+    }
+
+    private void listarFormasPago() {
+        List<FormasPagoDTO> lista = dao.listar();
+        DefaultTableModel model = new DefaultTableModel();
+        model.addColumn("Código");
+        model.addColumn("Descripción");
+
+        for (FormasPagoDTO fp : lista) {
+            Object[] fila = new Object[2];
+            fila[0] = fp.getId();
+            fila[1] = fp.getNombre();
+            model.addRow(fila);
+        }
+        view.jTable1.setModel(model);
+    }
+
+    private void modificar() {
+        if (idSeleccionado == 0) {
+            JOptionPane.showMessageDialog(view, "Seleccione un registro de la tabla");
             return;
         }
+        if (validar()) {
+            FormasPagoDTO fp = new FormasPagoDTO();
+            fp.setId(idSeleccionado);
+            fp.setNombre(view.txtFormasPago.getText());
 
-        FormaPagoDTO forma = new FormaPagoDTO();
-        forma.setCodigoForma(codigo);
-        forma.setDescripcion(descripcion);
-        forma.setActivo(1);
-
-        int res = formaPagoDAO.guardar(forma);
-        if (res > 0) {
-            JOptionPane.showMessageDialog(vista, "Forma de pago registrada.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
-            limpiarCampos();
-            cargarCboxCodigo();
-            consultarTodos();
-        } else {
-            JOptionPane.showMessageDialog(vista, "No fue posible guardar.", "Error", JOptionPane.ERROR_MESSAGE);
+            if (dao.actualizar(fp)) {
+                JOptionPane.showMessageDialog(view, "Modificado correctamente");
+                listarFormasPago();
+                limpiar();
+            } else {
+                JOptionPane.showMessageDialog(view, "Error al modificar");
+            }
         }
     }
 
-    private void consultarForma() {
-        FormaPagoDTO forma = (FormaPagoDTO) vista.cboxCodigo.getSelectedItem();
-        if (forma == null) {
-            JOptionPane.showMessageDialog(vista, "Seleccione una forma de pago.", "Error", JOptionPane.WARNING_MESSAGE);
+    private void eliminar() {
+        if (idSeleccionado == 0) {
+            JOptionPane.showMessageDialog(view, "Seleccione un registro de la tabla");
             return;
         }
-        FormaPagoDTO f = formaPagoDAO.buscarPorCodigo(forma.getCodigoForma());
-        if (f != null) {
-            vista.txtDescripcion.setText(f.getDescripcion());
-            formaActual = f;
-        } else {
-            JOptionPane.showMessageDialog(vista, "No se encontró la forma de pago.", "No encontrado", JOptionPane.INFORMATION_MESSAGE);
+        int confirm = JOptionPane.showConfirmDialog(view, "¿Eliminar esta forma de pago?", "Confirmar", JOptionPane.YES_NO_OPTION);
+        if (confirm == JOptionPane.YES_OPTION) {
+            if (dao.eliminar(idSeleccionado)) {
+                JOptionPane.showMessageDialog(view, "Eliminado correctamente");
+                listarFormasPago();
+                limpiar();
+            } else {
+                JOptionPane.showMessageDialog(view, "Error al eliminar");
+            }
         }
     }
 
-    private void modificarForma() {
-        if (formaActual == null) {
-            JOptionPane.showMessageDialog(vista, "Consulte una forma de pago primero.", "Requerido", JOptionPane.WARNING_MESSAGE);
-            return;
+    private boolean validar() {
+        if (view.txtFormasPago.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(view, "Ingrese el nombre de la Forma de Pago");
+            return false;
         }
-        int confirm = JOptionPane.showConfirmDialog(vista, "¿Modificar esta forma de pago?", "Confirmar", JOptionPane.YES_NO_OPTION);
-        if (confirm != JOptionPane.YES_OPTION) return;
-
-        formaActual.setDescripcion(vista.txtDescripcion.getText().trim());
-
-        int res = formaPagoDAO.actualizar(formaActual);
-        if (res > 0) {
-            JOptionPane.showMessageDialog(vista, "Forma de pago actualizada.", "Actualización", JOptionPane.INFORMATION_MESSAGE);
-            limpiarCampos();
-            cargarCboxCodigo();
-            consultarTodos();
-        } else {
-            JOptionPane.showMessageDialog(vista, "No fue posible actualizar.", "Error", JOptionPane.ERROR_MESSAGE);
-        }
-        formaActual = null;
+        return true;
     }
 
-    private void eliminarForma() {
-        if (formaActual == null) {
-            JOptionPane.showMessageDialog(vista, "Consulte una forma de pago primero.", "Requerido", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        int confirm = JOptionPane.showConfirmDialog(vista, "¿Eliminar esta forma de pago?", "Confirmar eliminación", JOptionPane.YES_NO_OPTION);
-        if (confirm != JOptionPane.YES_OPTION) return;
-
-        int res = formaPagoDAO.eliminar(formaActual.getIdFormaPago());
-        if (res > 0) {
-            JOptionPane.showMessageDialog(vista, "Eliminado exitosamente.", "Eliminación", JOptionPane.INFORMATION_MESSAGE);
-            limpiarCampos();
-            cargarCboxCodigo();
-            consultarTodos();
-        } else {
-            JOptionPane.showMessageDialog(vista, "No fue posible eliminar.", "Error", JOptionPane.ERROR_MESSAGE);
-        }
-        formaActual = null;
-    }
-
-    private void consultarTodos() {
-        List<FormaPagoDTO> lista = formaPagoDAO.listarFormasPago();
-        modeloTabla.setRowCount(0);
-        for (FormaPagoDTO f : lista) {
-            modeloTabla.addRow(new Object[]{f.getCodigoForma(), f.getDescripcion()});
-        }
-    }
-
-    private void limpiarCampos() {
-        vista.cboxCodigo.setSelectedIndex(0);
-        vista.txtDescripcion.setText("");
-        formaActual = null;
+    private void limpiar() {
+        idSeleccionado = 0;
+        view.txtFormasPago.setText("");
     }
 }

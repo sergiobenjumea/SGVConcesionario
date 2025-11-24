@@ -1,155 +1,140 @@
 package modelo.dao;
 
 import config.ConexionDB;
-import java.sql.*;
+import modelo.dto.VendedorDTO;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import modelo.dto.VendedorDTO;
 
 public class VendedorDAO {
-    public List<VendedorDTO> listarVendedores() {
+    
+    Connection acceso;
+    PreparedStatement ps;
+    ResultSet rs;
+
+    // --- REGISTRAR ---
+    public boolean registrar(VendedorDTO vend) {
+        String sql = "INSERT INTO vendedores (identificacion, nombre, profesion, fecha_contratacion) VALUES (?,?,?,?)";
+        try {
+            acceso = ConexionDB.getConexion();
+            ps = acceso.prepareStatement(sql);
+            ps.setString(1, vend.getIdentificacion());
+            ps.setString(2, vend.getNombre());
+            ps.setString(3, vend.getProfesion());
+            ps.setDate(4, vend.getFechaContratacion());
+            ps.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            System.err.println("Error registrar vendedor: " + e.toString());
+            return false;
+        }
+    }
+
+    // --- LISTAR ---
+    public List<VendedorDTO> listar() {
         List<VendedorDTO> lista = new ArrayList<>();
-        String sql = "SELECT * FROM vendedores";
-        try (Connection con = ConexionDB.getConexion();
-             PreparedStatement ps = con.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        String sql = "SELECT * FROM vendedores ORDER BY id_vendedor DESC";
+        try {
+            acceso = ConexionDB.getConexion();
+            ps = acceso.prepareStatement(sql);
+            rs = ps.executeQuery();
             while (rs.next()) {
                 VendedorDTO v = new VendedorDTO();
-                v.setIdVendedor(rs.getInt("id_vendedor"));
+                v.setId(rs.getInt("id_vendedor"));
                 v.setIdentificacion(rs.getString("identificacion"));
                 v.setNombre(rs.getString("nombre"));
                 v.setProfesion(rs.getString("profesion"));
                 v.setFechaContratacion(rs.getDate("fecha_contratacion"));
-                v.setEstado(rs.getString("estado"));
                 lista.add(v);
             }
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (SQLException e) {
+            System.err.println("Error listar vendedores: " + e.toString());
+        }
         return lista;
     }
-    public VendedorDTO buscarPorId(int idVendedor) {
-    VendedorDTO vendedor = null;
-    String sql = "SELECT * FROM vendedores WHERE id_vendedor = ?";
-    try (Connection con = ConexionDB.getConexion();
-         PreparedStatement ps = con.prepareStatement(sql)) {
-        ps.setInt(1, idVendedor);
-        ResultSet rs = ps.executeQuery();
-        if (rs.next()) {
-            vendedor = new VendedorDTO();
-            vendedor.setIdVendedor(rs.getInt("id_vendedor"));
-            vendedor.setNombre(rs.getString("nombre"));
-            // ... agrega aquí otros campos según tu DTO
-        }
-    } catch (Exception e) {
-        e.printStackTrace();
-    }
-    return vendedor;
-}
 
-    public VendedorDTO buscarPorNombre(String nombre) {
-        VendedorDTO vendedor = null;
-        String sql = "SELECT * FROM vendedores WHERE nombre = ?";
-        try (Connection con = ConexionDB.getConexion();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, nombre);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
-                vendedor = new VendedorDTO();
-                vendedor.setIdVendedor(rs.getInt("id_vendedor"));
-                vendedor.setNombre(rs.getString("nombre"));
-                // ... agrega aquí otros campos según tu DTO
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+    // --- ACTUALIZAR ---
+    public boolean actualizar(VendedorDTO vend) {
+        String sql = "UPDATE vendedores SET identificacion=?, nombre=?, profesion=? WHERE id_vendedor=?";
+        try {
+            acceso = ConexionDB.getConexion();
+            ps = acceso.prepareStatement(sql);
+            ps.setString(1, vend.getIdentificacion());
+            ps.setString(2, vend.getNombre());
+            ps.setString(3, vend.getProfesion());
+            ps.setInt(4, vend.getId()); // WHERE id_vendedor
+            ps.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            System.err.println("Error actualizar vendedor: " + e.toString());
+            return false;
         }
-        return vendedor;
     }
-    public VendedorDTO leerPorIdentificacion(String identificacion) {
-        VendedorDTO vendedor = null;
+
+    // --- ELIMINAR ---
+    public boolean eliminar(int id) {
+        String sql = "DELETE FROM vendedores WHERE id_vendedor=?";
+        try {
+            acceso = ConexionDB.getConexion();
+            ps = acceso.prepareStatement(sql);
+            ps.setInt(1, id);
+            ps.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            System.err.println("Error eliminar vendedor: " + e.toString());
+            return false;
+        }
+    }
+    
+    // --- BUSCAR POR IDENTIFICACIÓN (Para el botón Consultar) ---
+    public VendedorDTO buscarPorIdentificacion(String identificacion) {
+        VendedorDTO v = null;
         String sql = "SELECT * FROM vendedores WHERE identificacion = ?";
-        try (Connection con = ConexionDB.getConexion();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+        try {
+            acceso = ConexionDB.getConexion();
+            ps = acceso.prepareStatement(sql);
             ps.setString(1, identificacion);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    vendedor = new VendedorDTO();
-                    vendedor.setIdVendedor(rs.getInt("id_vendedor"));
-                    vendedor.setIdentificacion(rs.getString("identificacion"));
-                    vendedor.setNombre(rs.getString("nombre"));
-                    vendedor.setProfesion(rs.getString("profesion"));
-                    vendedor.setFechaContratacion(rs.getDate("fecha_contratacion"));
-                    vendedor.setEstado(rs.getString("estado"));
-                }
+            rs = ps.executeQuery();
+            if (rs.next()) {
+                v = new VendedorDTO();
+                v.setId(rs.getInt("id_vendedor"));
+                v.setIdentificacion(rs.getString("identificacion"));
+                v.setNombre(rs.getString("nombre"));
+                v.setProfesion(rs.getString("profesion"));
+                v.setFechaContratacion(rs.getDate("fecha_contratacion"));
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (SQLException e) {
+            System.err.println("Error buscar vendedor: " + e.toString());
         }
-        return vendedor;
-    }    
-    public int crear(VendedorDTO vendedor) {
-        int resultado = 0;
-        String sql = "INSERT INTO vendedores (identificacion, nombre, profesion, fecha_contratacion, estado) VALUES (?, ?, ?, ?, ?)";
-        try (Connection con = ConexionDB.getConexion();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, vendedor.getIdentificacion());
-            ps.setString(2, vendedor.getNombre());
-            ps.setString(3, vendedor.getProfesion());
-            ps.setDate(4, new java.sql.Date(vendedor.getFechaContratacion().getTime()));
-            ps.setString(5, vendedor.getEstado());
-            resultado = ps.executeUpdate();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return resultado;
+        return v;
     }
-    public int actualizar(VendedorDTO vendedor) {
-        int resultado = 0;
-        String sql = "UPDATE vendedores SET identificacion = ?, nombre = ?, profesion = ?, fecha_contratacion = ?, estado = ? WHERE id_vendedor = ?";
-        try (Connection con = ConexionDB.getConexion();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, vendedor.getIdentificacion());
-            ps.setString(2, vendedor.getNombre());
-            ps.setString(3, vendedor.getProfesion());
-            ps.setDate(4, new java.sql.Date(vendedor.getFechaContratacion().getTime()));
-            ps.setString(5, vendedor.getEstado());
-            ps.setInt(6, vendedor.getIdVendedor());
-            resultado = ps.executeUpdate();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return resultado;
-    }
-    public int eliminar(int idVendedor) {
-        int resultado = 0;
-        String sql = "DELETE FROM vendedores WHERE id_vendedor = ?";
-        try (Connection con = ConexionDB.getConexion();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, idVendedor);
-            resultado = ps.executeUpdate();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return resultado;
-    }
-    public List<VendedorDTO> leerTodos() {
-        List<VendedorDTO> lista = new ArrayList<>();
-        String sql = "SELECT * FROM vendedores";
-        try (Connection con = ConexionDB.getConexion();
-             PreparedStatement ps = con.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                VendedorDTO vendedor = new VendedorDTO();
-                vendedor.setIdVendedor(rs.getInt("id_vendedor"));
-                vendedor.setIdentificacion(rs.getString("identificacion"));
-                vendedor.setNombre(rs.getString("nombre"));
-                vendedor.setProfesion(rs.getString("profesion"));
-                vendedor.setFechaContratacion(rs.getDate("fecha_contratacion"));
-                vendedor.setEstado(rs.getString("estado"));
-                lista.add(vendedor);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return lista;
-    }
+    // ... (Métodos anteriores) ...
 
+    // --- BUSCAR POR NOMBRE (FLEXIBLE) ---
+    public VendedorDTO buscarPorNombre(String busqueda) {
+        VendedorDTO v = null;
+        // LIKE usa % para buscar coincidencias parciales
+        String sql = "SELECT * FROM vendedores WHERE nombre LIKE ? LIMIT 1";
+        try {
+            acceso = ConexionDB.getConexion();
+            ps = acceso.prepareStatement(sql);
+            // Agregamos los comodines % alrededor del texto para que busque en cualquier parte
+            ps.setString(1, "%" + busqueda + "%"); 
+            rs = ps.executeQuery();
+            if (rs.next()) {
+                v = new VendedorDTO();
+                v.setId(rs.getInt("id_vendedor"));
+                v.setIdentificacion(rs.getString("identificacion"));
+                v.setNombre(rs.getString("nombre"));
+                v.setProfesion(rs.getString("profesion"));
+                v.setFechaContratacion(rs.getDate("fecha_contratacion"));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error buscar por nombre: " + e.toString());
+        }
+        return v;
+    }
 }

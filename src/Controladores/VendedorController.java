@@ -1,234 +1,181 @@
 package Controladores;
 
-import modelo.dao.VendedorDAO;
 import modelo.dto.VendedorDTO;
+import modelo.dao.VendedorDAO;
 import vistas.UIVendedor;
-import javax.swing.JOptionPane;
-import javax.swing.table.DefaultTableModel;
+
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.Date;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.List;
+import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
 
 public class VendedorController implements ActionListener {
 
-    private UIVendedor vista;
-    private VendedorDAO vendedorDAO;
-    private VendedorDTO vendedorActual;
-    private DefaultTableModel modeloTabla;
+    private UIVendedor view;
+    private VendedorDAO dao;
+    private int idVendedorSeleccionado = 0; // Para saber a cuál editar/eliminar
 
-    public VendedorController(UIVendedor vista) {
-        this.vista = vista;
-        this.vendedorDAO = new VendedorDAO();
+    public VendedorController(UIVendedor view) {
+        this.view = view;
+        this.dao = new VendedorDAO();
 
-        modeloTabla = (DefaultTableModel) vista.tblVendedores.getModel();
-        modeloTabla.setRowCount(0);
-        modeloTabla.setColumnIdentifiers(new String[]{
-            "ID", "Identificación", "Nombre", "Profesión", "Estado"
+        // Configuración inicial
+        this.view.setLocationRelativeTo(null);
+        listarVendedores();
+
+        // Listeners Botones
+        this.view.btnGuardarVendedor.addActionListener(this);
+        this.view.btnConsultarTodosVendedor.addActionListener(this);
+        this.view.btnConsultarVendedor.addActionListener(this); // Botón Consultar Específico
+        this.view.btnModificarVendedor.addActionListener(this);
+        this.view.btnEliminarVendedor.addActionListener(this);
+
+        // Listener Tabla (Clic para editar)
+        this.view.tblVendedores.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int fila = view.tblVendedores.rowAtPoint(e.getPoint());
+                if (fila > -1) {
+                    // Recuperamos ID (Columna 0 oculta o visible)
+                    idVendedorSeleccionado = (int) view.tblVendedores.getValueAt(fila, 0);
+                    // Llenamos campos
+                    view.txtidVendedor.setText(view.tblVendedores.getValueAt(fila, 1).toString()); // Identificación
+                    view.txtnombreVendedor.setText(view.tblVendedores.getValueAt(fila, 2).toString()); // Nombre
+                    view.txtprofesionVendedor.setText(view.tblVendedores.getValueAt(fila, 3).toString()); // Profesión
+                }
+            }
         });
-
-        this.vista.btnGuardarVendedor.addActionListener(this);
-        this.vista.btnConsultarVendedor.addActionListener(this);
-        this.vista.btnModificarVendedor.addActionListener(this);
-        this.vista.btnEliminarVendedor.addActionListener(this);
-        this.vista.btnConsultarTodosVendedor.addActionListener(this);
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        if (e.getSource() == vista.btnGuardarVendedor) {
-            registrarVendedor();
-        } else if (e.getSource() == vista.btnConsultarVendedor) {
-            consultarVendedor();
-        } else if (e.getSource() == vista.btnModificarVendedor) {
+        if (e.getSource() == view.btnGuardarVendedor) {
+            guardarVendedor();
+        } else if (e.getSource() == view.btnConsultarTodosVendedor) {
+            listarVendedores();
+        } else if (e.getSource() == view.btnConsultarVendedor) {
+            buscarVendedor();
+        } else if (e.getSource() == view.btnModificarVendedor) {
             modificarVendedor();
-        } else if (e.getSource() == vista.btnEliminarVendedor) {
+        } else if (e.getSource() == view.btnEliminarVendedor) {
             eliminarVendedor();
-        } else if (e.getSource() == vista.btnConsultarTodosVendedor) {
-            consultarTodos();
         }
     }
 
-    private void registrarVendedor() {
-        try {
-            VendedorDTO vendedor = new VendedorDTO();
-            vendedor.setIdentificacion(vista.txtidVendedor.getText().trim());
-            vendedor.setNombre(vista.txtnombreVendedor.getText().trim());
-            vendedor.setProfesion(vista.txtprofesionVendedor.getText().trim());
-            vendedor.setFechaContratacion(new Date());
-            vendedor.setEstado("Activo");
+    // --- GUARDAR ---
+    private void guardarVendedor() {
+        if (validarCampos()) {
+            VendedorDTO v = new VendedorDTO();
+            v.setIdentificacion(view.txtidVendedor.getText());
+            v.setNombre(view.txtnombreVendedor.getText());
+            v.setProfesion(view.txtprofesionVendedor.getText());
+            // Asignamos FECHA ACTUAL automáticamente porque la vista no tiene campo fecha
+            v.setFechaContratacion(new java.sql.Date(System.currentTimeMillis()));
 
-            if (vendedor.getIdentificacion().isEmpty() || vendedor.getNombre().isEmpty()) {
-                JOptionPane.showMessageDialog(vista,
-                        "Complete los campos obligatorios (ID y Nombre)",
-                        "Datos incompletos",
-                        JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-
-            int resultado = vendedorDAO.crear(vendedor);
-
-            if (resultado > 0) {
-                JOptionPane.showMessageDialog(vista,
-                        "Vendedor registrado exitosamente",
-                        "Registro exitoso",
-                        JOptionPane.INFORMATION_MESSAGE);
-                limpiarCampos();
+            if (dao.registrar(v)) {
+                JOptionPane.showMessageDialog(view, "Vendedor registrado exitosamente");
+                listarVendedores();
+                limpiar();
             } else {
-                JOptionPane.showMessageDialog(vista,
-                        "Error al registrar vendedor",
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(view, "Error al guardar (revise si el ID ya existe)");
             }
-
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(vista,
-                    "Error: " + ex.getMessage(),
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    private void consultarVendedor() {
-        String identificacion = vista.txtidVendedor.getText().trim();
-        if (identificacion.isEmpty()) {
-            JOptionPane.showMessageDialog(vista,
-                    "Ingrese el ID del vendedor a consultar",
-                    "Campo vacío",
-                    JOptionPane.WARNING_MESSAGE);
-            return;
-        }
+    // --- LISTAR ---
+    private void listarVendedores() {
+        List<VendedorDTO> lista = dao.listar();
+        DefaultTableModel model = new DefaultTableModel();
+        
+        // Estructura tabla
+        model.addColumn("ID BD"); // Columna 0 (PK interna)
+        model.addColumn("Identificación"); // Columna 1
+        model.addColumn("Nombre");
+        model.addColumn("Profesión");
+        model.addColumn("Fecha Contratación");
 
-        vendedorActual = vendedorDAO.leerPorIdentificacion(identificacion);
-
-        if (vendedorActual != null) {
-            vista.txtnombreVendedor.setText(vendedorActual.getNombre());
-            vista.txtprofesionVendedor.setText(vendedorActual.getProfesion());
-            JOptionPane.showMessageDialog(vista,
-                    "Vendedor encontrado",
-                    "Consulta exitosa",
-                    JOptionPane.INFORMATION_MESSAGE);
-        } else {
-            JOptionPane.showMessageDialog(vista,
-                    "Vendedor no encontrado con ID: " + identificacion,
-                    "No encontrado",
-                    JOptionPane.WARNING_MESSAGE);
-            limpiarCampos();
+        for (VendedorDTO v : lista) {
+            Object[] fila = new Object[5];
+            fila[0] = v.getId();
+            fila[1] = v.getIdentificacion();
+            fila[2] = v.getNombre();
+            fila[3] = v.getProfesion();
+            fila[4] = v.getFechaContratacion();
+            model.addRow(fila);
         }
+        view.tblVendedores.setModel(model);
     }
 
+    // --- MODIFICAR ---
     private void modificarVendedor() {
-        if (vendedorActual == null) {
-            JOptionPane.showMessageDialog(vista,
-                    "Primero consulte un vendedor para modificarlo",
-                    "Consulta requerida",
-                    JOptionPane.WARNING_MESSAGE);
+        if (idVendedorSeleccionado == 0) {
+            JOptionPane.showMessageDialog(view, "Seleccione un vendedor de la tabla");
             return;
         }
-
-        int confirmacion = JOptionPane.showConfirmDialog(vista,
-                "¿Está seguro de modificar este vendedor?",
-                "Confirmar modificación",
-                JOptionPane.YES_NO_OPTION);
-
-        if (confirmacion == JOptionPane.YES_OPTION) {
-            try {
-                vendedorActual.setIdentificacion(vista.txtidVendedor.getText().trim());
-                vendedorActual.setNombre(vista.txtnombreVendedor.getText().trim());
-                vendedorActual.setProfesion(vista.txtprofesionVendedor.getText().trim());
-
-                int resultado = vendedorDAO.actualizar(vendedorActual);
-
-                if (resultado > 0) {
-                    JOptionPane.showMessageDialog(vista,
-                            "Vendedor modificado exitosamente",
-                            "Modificación exitosa",
-                            JOptionPane.INFORMATION_MESSAGE);
-                    limpiarCampos();
-                    vendedorActual = null;
-                } else {
-                    JOptionPane.showMessageDialog(vista,
-                            "Error al modificar vendedor",
-                            "Error",
-                            JOptionPane.ERROR_MESSAGE);
-                }
-
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(vista,
-                        "Error: " + ex.getMessage(),
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE);
+        if (validarCampos()) {
+            VendedorDTO v = new VendedorDTO();
+            v.setId(idVendedorSeleccionado);
+            v.setIdentificacion(view.txtidVendedor.getText());
+            v.setNombre(view.txtnombreVendedor.getText());
+            v.setProfesion(view.txtprofesionVendedor.getText());
+            
+            if (dao.actualizar(v)) {
+                JOptionPane.showMessageDialog(view, "Vendedor modificado exitosamente");
+                listarVendedores();
+                limpiar();
             }
         }
     }
 
+    // --- ELIMINAR ---
     private void eliminarVendedor() {
-        if (vendedorActual == null) {
-            JOptionPane.showMessageDialog(vista,
-                    "Primero consulte un vendedor para eliminarlo",
-                    "Consulta requerida",
-                    JOptionPane.WARNING_MESSAGE);
+        if (idVendedorSeleccionado == 0) {
+            JOptionPane.showMessageDialog(view, "Seleccione un vendedor de la tabla");
             return;
         }
-
-        int confirmacion = JOptionPane.showConfirmDialog(vista,
-                "¿Está seguro de eliminar este vendedor?\nNombre: " + vendedorActual.getNombre(),
-                "Confirmar eliminación",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.WARNING_MESSAGE);
-
-        if (confirmacion == JOptionPane.YES_OPTION) {
-            int resultado = vendedorDAO.eliminar(vendedorActual.getIdVendedor());
-            if (resultado > 0) {
-                JOptionPane.showMessageDialog(vista,
-                        "Vendedor eliminado exitosamente",
-                        "Eliminación exitosa",
-                        JOptionPane.INFORMATION_MESSAGE);
-                limpiarCampos();
-                vendedorActual = null;
-            } else {
-                JOptionPane.showMessageDialog(vista,
-                        "Error al eliminar vendedor",
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE);
+        int confirm = JOptionPane.showConfirmDialog(view, "¿Eliminar este vendedor?", "Confirmar", JOptionPane.YES_NO_OPTION);
+        if (confirm == JOptionPane.YES_OPTION) {
+            if (dao.eliminar(idVendedorSeleccionado)) {
+                JOptionPane.showMessageDialog(view, "Eliminado exitosamente");
+                listarVendedores();
+                limpiar();
             }
         }
     }
-
-    private void consultarTodos() {
-        List<VendedorDTO> listaVendedores = vendedorDAO.leerTodos();
-
-        if (listaVendedores.isEmpty()) {
-            JOptionPane.showMessageDialog(vista,
-                    "No hay vendedores registrados",
-                    "Sin registros",
-                    JOptionPane.INFORMATION_MESSAGE);
-            return;
+    
+    // --- BUSCAR ESPECÍFICO ---
+    private void buscarVendedor() {
+        String idBusqueda = view.txtidVendedor.getText();
+        if(idBusqueda.isEmpty()){
+             JOptionPane.showMessageDialog(view, "Ingrese una Identificación para buscar");
+             return;
         }
-
-        modeloTabla.setRowCount(0);
-
-        for (VendedorDTO vendedor : listaVendedores) {
-            Object[] fila = {
-                    vendedor.getIdVendedor(),
-                    vendedor.getIdentificacion(),
-                    vendedor.getNombre(),
-                    vendedor.getProfesion(),
-                    vendedor.getEstado()
-            };
-            modeloTabla.addRow(fila);
+        VendedorDTO v = dao.buscarPorIdentificacion(idBusqueda);
+        if(v != null){
+             view.txtnombreVendedor.setText(v.getNombre());
+             view.txtprofesionVendedor.setText(v.getProfesion());
+             idVendedorSeleccionado = v.getId(); // Importante para poder modificarlo luego
+             JOptionPane.showMessageDialog(view, "Vendedor Encontrado");
+        } else {
+             JOptionPane.showMessageDialog(view, "Vendedor no encontrado");
         }
-
-        JOptionPane.showMessageDialog(vista,
-                "Se encontraron " + listaVendedores.size() + " vendedores",
-                "Consulta exitosa",
-                JOptionPane.INFORMATION_MESSAGE);
     }
 
-    private void limpiarCampos() {
-        vista.txtidVendedor.setText("");
-        vista.txtnombreVendedor.setText("");
-        vista.txtprofesionVendedor.setText("");
-        vendedorActual = null;
+    private boolean validarCampos() {
+        if (view.txtidVendedor.getText().isEmpty() || view.txtnombreVendedor.getText().isEmpty()) {
+            JOptionPane.showMessageDialog(view, "ID y Nombre son obligatorios");
+            return false;
+        }
+        return true;
+    }
+
+    private void limpiar() {
+        idVendedorSeleccionado = 0;
+        view.txtidVendedor.setText("");
+        view.txtnombreVendedor.setText("");
+        view.txtprofesionVendedor.setText("");
     }
 }

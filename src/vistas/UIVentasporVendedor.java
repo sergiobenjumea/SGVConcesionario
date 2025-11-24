@@ -144,29 +144,29 @@ public class UIVentasporVendedor extends javax.swing.JFrame {
 
         tblVentasRealizadasVendedor.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null}
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null}
             },
             new String [] {
-                "No. Factura", "Fecha", "ID Auto", "Marca", "Línea", "Año", "Cliente", "Total"
+                "No. Factura", "Fecha", "Marca", "Línea", "Año", "Cliente", "Total"
             }
         ));
         jScrollPane1.setViewportView(tblVentasRealizadasVendedor);
         if (tblVentasRealizadasVendedor.getColumnModel().getColumnCount() > 0) {
-            tblVentasRealizadasVendedor.getColumnModel().getColumn(5).setResizable(false);
+            tblVentasRealizadasVendedor.getColumnModel().getColumn(4).setResizable(false);
         }
 
         jLabel6.setText("Total Ventas Vendedor:");

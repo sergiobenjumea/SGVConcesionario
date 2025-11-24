@@ -1,92 +1,100 @@
 package Controladores;
 
-import vistas.UIPrincipal;
-import vistas.UICliente;
-import vistas.UIAutomoviles;
-import vistas.UIVendedor;
-import vistas.UIRegistrarventa;
-import vistas.UIFormasPago;
-import vistas.UIVentasporVendedor;
-import vistas.UIVentasCreditoConcesionario;
-import vistas.UIVendedorconMayorVenta;
-import vistas.UIBuscarporVendedor;
+import vistas.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import javax.swing.JOptionPane;
 
 public class PrincipalController implements ActionListener {
-    
-    private UIPrincipal vista;
-    
+
+    private UIPrincipal vistaPrincipal;
+
     public PrincipalController(UIPrincipal vista) {
-        this.vista = vista;
+        this.vistaPrincipal = vista;
+        this.vistaPrincipal.setVisible(true); // Mostrar ventana principal
+        this.vistaPrincipal.setLocationRelativeTo(null);
         
-        this.vista.menuiClientes.addActionListener(this);
-        this.vista.menuiVendedores.addActionListener(this);
-        this.vista.menuiAutomoviles.addActionListener(this);
-        this.vista.menuiSalirdelSistema.addActionListener(this);
-        this.vista.menuiRegistrarVenta.addActionListener(this);
-        this.vista.menuiVendedorMayorVenta.addActionListener(this);
-        this.vista.menuiVentasporVendedor.addActionListener(this);
-        this.vista.menuiVentasCreditoConcesionario.addActionListener(this);
-        this.vista.menuiBusquedaporVendedor.addActionListener(this);
-        if(this.vista.menuiFormasPago != null){
-            this.vista.menuiFormasPago.addActionListener(this); // Incluye Formas de Pago si tienes menú
+        // Asignar listeners a los menús
+        // Asegúrate que los JMenuItem sean public en UIPrincipal
+        try {
+            this.vistaPrincipal.menuiClientes.addActionListener(this);
+            this.vistaPrincipal.menuiAutomoviles.addActionListener(this);
+            this.vistaPrincipal.menuiVendedores.addActionListener(this);
+            this.vistaPrincipal.menuiFormasPago.addActionListener(this);
+            this.vistaPrincipal.menuiRegistrarVenta.addActionListener(this);
+            this.vistaPrincipal.menuiVentasporVendedor.addActionListener(this);
+            this.vistaPrincipal.menuiVendedorMayorVenta.addActionListener(this);
+            this.vistaPrincipal.menuiVentasCreditoConcesionario.addActionListener(this);
+            this.vistaPrincipal.menuiBusquedaporVendedor.addActionListener(this);
+            // ... otros menús
+        } catch (NullPointerException e) {
+            System.err.println("Error: Algunos componentes del menú son nulos o no son públicos en la vista.");
         }
-        this.vista.setVisible(true);
     }
-    
+
     @Override
     public void actionPerformed(ActionEvent e) {
-        Object src = e.getSource();
-
-        if (src == vista.menuiClientes) {
-            UICliente vistaCliente = new UICliente();
-            new ClienteController(vistaCliente);
-            vistaCliente.setVisible(true);
-        } 
-        else if (src == vista.menuiVendedores) {
-            UIVendedor vistaVendedor = new UIVendedor();
-            new VendedorController(vistaVendedor);
-            vistaVendedor.setVisible(true);
-        } 
-        else if (src == vista.menuiAutomoviles) {
-            UIAutomoviles vistaAutos = new UIAutomoviles();
-            new AutomovilesController(vistaAutos);
-            vistaAutos.setVisible(true);
+        try {
+            if (e.getSource() == vistaPrincipal.menuiClientes) {
+                UICliente vistaC = new UICliente();
+                // Inyección: Pasamos la vista al controlador
+                new ClienteController(vistaC); 
+                vistaC.setVisible(true);
+                
+            } else if (e.getSource() == vistaPrincipal.menuiAutomoviles) {
+                UIAutomoviles vistaAuto = new UIAutomoviles();
+                AutomovilController ctrlAuto = new AutomovilController(vistaAuto);
+                vistaAuto.setVisible(true);
+                
+            } else if (e.getSource() == vistaPrincipal.menuiVendedores) {
+                UIVendedor vistaV = new UIVendedor();
+                new VendedorController(vistaV);
+                vistaV.setVisible(true);
+            }
+            else if (e.getSource() == vistaPrincipal.menuiClientes) {
+                UICliente vistaCliente = new UICliente();
+                ClienteController ctrlCliente = new ClienteController(vistaCliente);
+                vistaCliente.setVisible(true);
+            }
+            else if (e.getSource() == vistaPrincipal.menuiVendedores) {
+                UIVendedor vistaVend = new UIVendedor();
+                VendedorController ctrlVend = new VendedorController(vistaVend);
+                vistaVend.setVisible(true);
+            }
+            else if (e.getSource() == vistaPrincipal.menuiFormasPago) {
+                UIFormasPago vistaFP = new UIFormasPago();
+                FormasPagoController ctrlFP = new FormasPagoController(vistaFP);
+                vistaFP.setVisible(true);
+            }
+            else if (e.getSource() == vistaPrincipal.menuiRegistrarVenta) {
+                UIRegistrarventa vistaVenta = new UIRegistrarventa();
+                RegistrarVentaController ctrlVenta = new RegistrarVentaController(vistaVenta);
+                vistaVenta.setVisible(true);
+            }
+            else if (e.getSource() == vistaPrincipal.menuiVentasporVendedor) {
+                UIVentasporVendedor vistaReporte = new UIVentasporVendedor();
+                VentasPorVendedorController ctrlReporte = new VentasPorVendedorController(vistaReporte);
+                vistaReporte.setVisible(true);
+            }
+            else if (e.getSource() == vistaPrincipal.menuiVendedorMayorVenta) {
+                UIVendedorconMayorVenta vistaMayor = new UIVendedorconMayorVenta();
+                VendedorMayorVentaController ctrlMayor = new VendedorMayorVentaController(vistaMayor);
+                vistaMayor.setVisible(true);
+            }
+            else if (e.getSource() == vistaPrincipal.menuiVentasCreditoConcesionario) {
+                UIVentasCreditoConcesionario vistaCredito = new UIVentasCreditoConcesionario();
+                VentasCreditoController ctrlCredito = new VentasCreditoController(vistaCredito);
+                vistaCredito.setVisible(true);
+            }
+            else if (e.getSource() == vistaPrincipal.menuiBusquedaporVendedor) {
+                UIBuscarporVendedor vistaBuscar = new UIBuscarporVendedor();
+                BuscarVendedorController ctrlBuscar = new BuscarVendedorController(vistaBuscar);
+                vistaBuscar.setVisible(true);
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(vistaPrincipal, "Error al abrir ventana: " + ex.getMessage());
+            ex.printStackTrace();
         }
-        else if (src == vista.menuiRegistrarVenta) {
-            UIRegistrarventa vistaVenta = new UIRegistrarventa();
-            new RegistrarVentaController(vistaVenta);
-            vistaVenta.setVisible(true);
-        }
-        else if (src == vista.menuiFormasPago) {
-            UIFormasPago vistaFormasPago = new UIFormasPago();
-            new FormasPagoController(vistaFormasPago);
-            vistaFormasPago.setVisible(true);
-        }
-        else if (src == vista.menuiVentasporVendedor) {
-            UIVentasporVendedor vistaVentasVendedor = new UIVentasporVendedor();
-            new VentasporVendedorController(vistaVentasVendedor);
-            vistaVentasVendedor.setVisible(true);
-        }
-        else if (src == vista.menuiVentasCreditoConcesionario) {
-            UIVentasCreditoConcesionario vistaCreditos = new UIVentasCreditoConcesionario();
-            new VentasCreditoConcesionarioController(vistaCreditos);
-            vistaCreditos.setVisible(true);
-        }
-        else if (src == vista.menuiVendedorMayorVenta) {
-            UIVendedorconMayorVenta vistaVendedorMayor = new UIVendedorconMayorVenta();
-            new VendedorconMayorVentaController(vistaVendedorMayor);
-            vistaVendedorMayor.setVisible(true);
-        }
-        else if (src == vista.menuiBusquedaporVendedor) {
-            UIBuscarporVendedor vistaBuscarVendedor = new UIBuscarporVendedor();
-            new BusquedaVendedorController(vistaBuscarVendedor);
-            vistaBuscarVendedor.setVisible(true);
-        }
-        else if (src == vista.menuiSalirdelSistema) {
-            vista.dispose();
-            System.exit(0);
-        }
+        
     }
 }

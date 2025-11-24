@@ -1,249 +1,210 @@
 package Controladores;
 
-import modelo.dao.ClienteDAO;
-import modelo.dao.TipoIdentificacionDAO;
 import modelo.dto.ClienteDTO;
-import modelo.dto.TipoIdentificacionDTO;
+import modelo.dao.ClienteDAO;
+import modelo.util.ItemCombo;
 import vistas.UICliente;
 
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.text.SimpleDateFormat;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.text.ParseException;
-import java.util.Date;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.Period;
+import java.time.ZoneId;
 import java.util.List;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
 
 public class ClienteController implements ActionListener {
 
-    private UICliente vista;
-    private ClienteDAO clienteDAO;
-    private TipoIdentificacionDAO tipoIdDAO;
-    private ClienteDTO clienteActual;
-    private DefaultTableModel modeloTabla;
+    private UICliente view;
+    private ClienteDAO dao;
+    private int idClienteSeleccionado = 0; // Guardamos el ID del cliente que se clickeó en la tabla
 
-    public ClienteController(UICliente vista) {
-        this.vista = vista;
-        this.clienteDAO = new ClienteDAO();
-        this.tipoIdDAO = new TipoIdentificacionDAO();
+    public ClienteController(UICliente view) {
+        this.view = view;
+        this.dao = new ClienteDAO();
 
-        cargarTiposIdentificacion();
+        // Configuración visual
+        this.view.setLocationRelativeTo(null);
+        this.view.txtedadCliente.setEditable(false);
 
-        modeloTabla = (DefaultTableModel) vista.tblClientes.getModel();
-        modeloTabla.setRowCount(0);
-        modeloTabla.setColumnIdentifiers(new String[]{
-            "ID", "Tipo ID", "Identificación", "Nombre", "Edad", "Email"
+        // Cargar datos
+        cargarTiposID();
+        listarClientes();
+
+        // Listeners de Botones
+        this.view.btnGuardarCliente.addActionListener(this);
+        this.view.btnConsultarTodosCliente.addActionListener(this);
+        this.view.btnModificarCliente.addActionListener(this);
+        this.view.btnEliminarCliente.addActionListener(this);
+        
+        // Listener de la Tabla (Para seleccionar fila al hacer clic)
+        this.view.tblClientes.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int fila = view.tblClientes.rowAtPoint(e.getPoint());
+                if (fila > -1) {
+                    // Recuperamos el ID oculto en la columna 0
+                    idClienteSeleccionado = (int) view.tblClientes.getValueAt(fila, 0);
+                    
+                    // Llenamos las cajas de texto
+                    view.txtIdentificacionCliente.setText(view.tblClientes.getValueAt(fila, 2).toString());
+                    view.txtnombreCliente.setText(view.tblClientes.getValueAt(fila, 3).toString());
+                    view.txtedadCliente.setText(view.tblClientes.getValueAt(fila, 4).toString());
+                    view.txtemailCliente.setText(view.tblClientes.getValueAt(fila, 5).toString());
+                    
+                    // Intentamos poner la fecha de nacimiento (si está en la tabla oculta o visible)
+                    // Nota: Para simplificar, la tabla muestra String, aquí asumimos formato
+                    // En un caso real idealmente guardaríamos el objeto completo en el modelo
+                }
+            }
         });
+    }
 
-        // Listeners
-        this.vista.btnGuardarCliente.addActionListener(this);
-        this.vista.btnConsultarCliente.addActionListener(this);
-        this.vista.btnModificarCliente.addActionListener(this);
-        this.vista.btnEliminarCliente.addActionListener(this);
-        this.vista.btnConsultarTodosCliente.addActionListener(this);
+    private void cargarTiposID() {
+        DefaultComboBoxModel model = new DefaultComboBoxModel(dao.obtenerTiposID());
+        view.cboxTipoIDCliente.setModel(model);
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        if (e.getSource() == vista.btnGuardarCliente) registrarCliente();
-        else if (e.getSource() == vista.btnConsultarCliente) consultarCliente();
-        else if (e.getSource() == vista.btnModificarCliente) modificarCliente();
-        else if (e.getSource() == vista.btnEliminarCliente) eliminarCliente();
-        else if (e.getSource() == vista.btnConsultarTodosCliente) consultarTodos();
-    }
-
-    private void cargarTiposIdentificacion() {
-        List<TipoIdentificacionDTO> tipos = tipoIdDAO.leerActivos();
-        vista.cboxTipoIDCliente.removeAllItems();
-        vista.cboxTipoIDCliente.addItem(null); // Opción vacía
-        for (TipoIdentificacionDTO tipo : tipos) {
-            vista.cboxTipoIDCliente.addItem(tipo);
+        if (e.getSource() == view.btnGuardarCliente) {
+            guardarCliente();
+        } else if (e.getSource() == view.btnConsultarTodosCliente) {
+            listarClientes();
+        } else if (e.getSource() == view.btnModificarCliente) {
+            modificarCliente();
+        } else if (e.getSource() == view.btnEliminarCliente) {
+            eliminarCliente();
         }
     }
 
-    private void registrarCliente() {
+    // --- GUARDAR ---
+    private void guardarCliente() {
+        if (validarCampos()) {
+            ClienteDTO cliente = armarClienteDesdeFormulario();
+            if (cliente != null && dao.registrar(cliente)) {
+                JOptionPane.showMessageDialog(view, "Registrado exitosamente");
+                listarClientes();
+                limpiar();
+            }
+        }
+    }
+
+    // --- MODIFICAR ---
+    private void modificarCliente() {
+        if (idClienteSeleccionado == 0) {
+            JOptionPane.showMessageDialog(view, "Seleccione un cliente de la tabla primero");
+            return;
+        }
+        if (validarCampos()) {
+            ClienteDTO cliente = armarClienteDesdeFormulario();
+            if (cliente != null) {
+                cliente.setId(idClienteSeleccionado); // Asignamos el ID que seleccionamos
+                if (dao.actualizar(cliente)) {
+                    JOptionPane.showMessageDialog(view, "Modificado exitosamente");
+                    listarClientes();
+                    limpiar();
+                }
+            }
+        }
+    }
+
+    // --- ELIMINAR ---
+    private void eliminarCliente() {
+        if (idClienteSeleccionado == 0) {
+            JOptionPane.showMessageDialog(view, "Seleccione un cliente de la tabla primero");
+            return;
+        }
+        int confirm = JOptionPane.showConfirmDialog(view, "¿Está seguro de eliminar este cliente?", "Confirmar", JOptionPane.YES_NO_OPTION);
+        if (confirm == JOptionPane.YES_OPTION) {
+            if (dao.eliminar(idClienteSeleccionado)) {
+                JOptionPane.showMessageDialog(view, "Eliminado exitosamente");
+                listarClientes();
+                limpiar();
+            }
+        }
+    }
+
+    // --- MÉTODOS AUXILIARES ---
+    
+    private boolean validarCampos() {
+        if (view.txtIdentificacionCliente.getText().isEmpty() || view.txtnombreCliente.getText().isEmpty()) {
+            JOptionPane.showMessageDialog(view, "Complete los campos obligatorios");
+            return false;
+        }
+        return true;
+    }
+
+    private ClienteDTO armarClienteDesdeFormulario() {
         try {
             ClienteDTO cliente = new ClienteDTO();
-            TipoIdentificacionDTO tipoSel = (TipoIdentificacionDTO) vista.cboxTipoIDCliente.getSelectedItem();
-            if (tipoSel == null) {
-                JOptionPane.showMessageDialog(vista, "Debe seleccionar un tipo de identificación", "Campo requerido", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            cliente.setIdTipoIdentificacion(tipoSel.getIdTipoIdentificacion());
-            cliente.setCodigoTipoIdentificacion(tipoSel.getCodigoTipo());
+            ItemCombo tipoSel = (ItemCombo) view.cboxTipoIDCliente.getSelectedItem();
+            
+            // Fechas y Edad
+            String fechaTexto = view.txtfechadeNacimientoCliente.getText(); 
+            SimpleDateFormat formato = new SimpleDateFormat("dd/MM/yyyy");
+            java.util.Date fechaJava = formato.parse(fechaTexto);
+            java.sql.Date fechaSQL = new java.sql.Date(fechaJava.getTime());
+            
+            LocalDate nacimiento = fechaJava.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+            int edadCalculada = Period.between(nacimiento, LocalDate.now()).getYears();
 
-            cliente.setIdentificacion(vista.txtIdentificacionCliente.getText().trim());
-            cliente.setNombre(vista.txtnombreCliente.getText().trim());
-            cliente.setEmail(vista.txtemailCliente.getText().trim());
-
-            // Fecha nacimiento
-            String fechaText = vista.txtfechadeNacimientoCliente.getText().trim();
-            if (fechaText.isEmpty()) {
-                JOptionPane.showMessageDialog(vista, "Ingrese la fecha de nacimiento", "Campo requerido", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-
-            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
-            Date fechaNac = sdf.parse(fechaText);
-            cliente.setFechaNacimiento(fechaNac);
-
-            int edad = calcularEdad(fechaNac);
-            cliente.setEdad(edad);
-            vista.txtedadCliente.setText(String.valueOf(edad));
-
-            // Validación obligatorios
-            if (cliente.getIdentificacion().isEmpty() || cliente.getNombre().isEmpty() || cliente.getEmail().isEmpty()) {
-                JOptionPane.showMessageDialog(vista, "Complete todos los campos obligatorios", "Datos incompletos", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-
-            int resultado = clienteDAO.crear(cliente);
-
-            if (resultado > 0) {
-                JOptionPane.showMessageDialog(vista, "Cliente registrado exitosamente\nEdad: " + edad + " años", "Registro exitoso", JOptionPane.INFORMATION_MESSAGE);
-                limpiarCampos();
-            } else {
-                JOptionPane.showMessageDialog(vista, "Error al registrar cliente", "Error", JOptionPane.ERROR_MESSAGE);
-            }
-
+            cliente.setIdTipoIdentificacion(tipoSel.getId());
+            cliente.setIdentificacion(view.txtIdentificacionCliente.getText());
+            cliente.setNombre(view.txtnombreCliente.getText());
+            cliente.setFechaNacimiento(fechaSQL);
+            cliente.setEdad(edadCalculada);
+            cliente.setEmail(view.txtemailCliente.getText());
+            
+            return cliente;
         } catch (ParseException ex) {
-            JOptionPane.showMessageDialog(vista, 
-                "La fecha debe estar en formato: dd/MM/yyyy\nVerifique que la fecha sea válida", 
-                "Error de fecha", JOptionPane.ERROR_MESSAGE);
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(vista, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(view, "Fecha inválida. Use formato dd/MM/yyyy");
+            return null;
         }
     }
 
-    private void consultarCliente() {
-        String identificacion = vista.txtIdentificacionCliente.getText().trim();
-        if (identificacion.isEmpty()) {
-            JOptionPane.showMessageDialog(vista, "Ingrese la identificación a consultar", "Campo vacío", JOptionPane.WARNING_MESSAGE);
-            return;
+    private void listarClientes() {
+        List<ClienteDTO> lista = dao.listar();
+        DefaultTableModel model = new DefaultTableModel();
+        
+        // Estructura de la tabla (Incluimos ID oculto o visible para poder seleccionar)
+        model.addColumn("ID"); // Columna 0
+        model.addColumn("Tipo");
+        model.addColumn("Identificación"); // Columna 2
+        model.addColumn("Nombre"); // Columna 3
+        model.addColumn("Edad"); // Columna 4
+        model.addColumn("Email"); // Columna 5
+
+        for (ClienteDTO c : lista) {
+            Object[] fila = new Object[6];
+            fila[0] = c.getId();
+            fila[1] = c.getNombreTipoId();
+            fila[2] = c.getIdentificacion();
+            fila[3] = c.getNombre();
+            fila[4] = c.getEdad();
+            fila[5] = c.getEmail();
+            model.addRow(fila);
         }
-
-        ClienteDTO cliente = clienteDAO.leerPorIdentificacion(identificacion);
-
-        if (cliente != null) {
-            clienteActual = cliente;
-            seleccionarTipoEnCombo(cliente.getIdTipoIdentificacion());
-            vista.txtnombreCliente.setText(cliente.getNombre());
-            vista.txtedadCliente.setText(String.valueOf(cliente.getEdad()));
-            vista.txtemailCliente.setText(cliente.getEmail());
-
-            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
-            vista.txtfechadeNacimientoCliente.setText(sdf.format(cliente.getFechaNacimiento()));
-
-            JOptionPane.showMessageDialog(vista, "Cliente encontrado", "Consulta exitosa", JOptionPane.INFORMATION_MESSAGE);
-        } else {
-            JOptionPane.showMessageDialog(vista, "Cliente no encontrado con identificación: " + identificacion, "No encontrado", JOptionPane.WARNING_MESSAGE);
-            limpiarCampos();
-        }
+        view.tblClientes.setModel(model);
+        
+        // Opcional: Ocultar la columna ID si no quieres que se vea
+        // view.tblClientes.getColumnModel().getColumn(0).setMinWidth(0);
+        // view.tblClientes.getColumnModel().getColumn(0).setMaxWidth(0);
     }
 
-    private void modificarCliente() {
-        if (clienteActual == null) {
-            JOptionPane.showMessageDialog(vista, "Primero consulte un cliente para modificarlo", "Consulta requerida", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        int confirm = JOptionPane.showConfirmDialog(vista, "¿Está seguro de modificar este cliente?", "Confirmar modificación", JOptionPane.YES_NO_OPTION);
-        if (confirm == JOptionPane.YES_OPTION) {
-            try {
-                TipoIdentificacionDTO tipoSel = (TipoIdentificacionDTO) vista.cboxTipoIDCliente.getSelectedItem();
-                clienteActual.setIdTipoIdentificacion(tipoSel.getIdTipoIdentificacion());
-                clienteActual.setCodigoTipoIdentificacion(tipoSel.getCodigoTipo());
-                clienteActual.setIdentificacion(vista.txtIdentificacionCliente.getText().trim());
-                clienteActual.setNombre(vista.txtnombreCliente.getText().trim());
-                clienteActual.setEmail(vista.txtemailCliente.getText().trim());
-
-                SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
-                Date fechaNac = sdf.parse(vista.txtfechadeNacimientoCliente.getText().trim());
-                clienteActual.setFechaNacimiento(fechaNac);
-
-                int edad = calcularEdad(fechaNac);
-                clienteActual.setEdad(edad);
-                vista.txtedadCliente.setText(String.valueOf(edad));
-
-                int resultado = clienteDAO.actualizar(clienteActual);
-                if (resultado > 0) {
-                    JOptionPane.showMessageDialog(vista, "Cliente modificado exitosamente", "Modificación exitosa", JOptionPane.INFORMATION_MESSAGE);
-                    limpiarCampos();
-                    clienteActual = null;
-                } else {
-                    JOptionPane.showMessageDialog(vista, "Error al modificar cliente", "Error", JOptionPane.ERROR_MESSAGE);
-                }
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(vista, "Error en los datos ingresados: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        }
-    }
-
-    private void eliminarCliente() {
-        if (clienteActual == null) {
-            JOptionPane.showMessageDialog(vista, "Primero consulte un cliente para eliminarlo", "Consulta requerida", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        int confirm = JOptionPane.showConfirmDialog(vista, "¿Está seguro de eliminar este cliente?\nNombre: " + clienteActual.getNombre() + "\nIdentificación: " + clienteActual.getIdentificacion(), "Confirmar eliminación", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-        if (confirm == JOptionPane.YES_OPTION) {
-            int resultado = clienteDAO.eliminar(clienteActual.getIdCliente());
-            if (resultado > 0) {
-                JOptionPane.showMessageDialog(vista, "Cliente eliminado exitosamente", "Eliminación exitosa", JOptionPane.INFORMATION_MESSAGE);
-                limpiarCampos();
-                clienteActual = null;
-            } else {
-                JOptionPane.showMessageDialog(vista, "Error al eliminar cliente", "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        }
-    }
-
-    private void consultarTodos() {
-        List<ClienteDTO> listaClientes = clienteDAO.leerTodos();
-        modeloTabla.setRowCount(0);
-        for (ClienteDTO cliente : listaClientes) {
-            Object[] fila = {
-                cliente.getIdCliente(),
-                cliente.getCodigoTipoIdentificacion(),
-                cliente.getIdentificacion(),
-                cliente.getNombre(),
-                cliente.getEdad(),
-                cliente.getEmail()
-            };
-            modeloTabla.addRow(fila);
-        }
-        JOptionPane.showMessageDialog(vista, "Se encontraron " + listaClientes.size() + " clientes", "Consulta exitosa", JOptionPane.INFORMATION_MESSAGE);
-    }
-
-    private int calcularEdad(Date fechaNacimiento) {
-        java.util.Calendar fechaNac = java.util.Calendar.getInstance();
-        fechaNac.setTime(fechaNacimiento);
-        java.util.Calendar hoy = java.util.Calendar.getInstance();
-        int edad = hoy.get(java.util.Calendar.YEAR) - fechaNac.get(java.util.Calendar.YEAR);
-        int mesActual = hoy.get(java.util.Calendar.MONTH);
-        int mesNacimiento = fechaNac.get(java.util.Calendar.MONTH);
-        if (mesNacimiento > mesActual || (mesNacimiento == mesActual && fechaNac.get(java.util.Calendar.DAY_OF_MONTH) > hoy.get(java.util.Calendar.DAY_OF_MONTH))) {
-            edad--;
-        }
-        return edad;
-    }
-
-    private void limpiarCampos() {
-        vista.txtIdentificacionCliente.setText("");
-        vista.txtnombreCliente.setText("");
-        vista.txtedadCliente.setText("");
-        vista.txtemailCliente.setText("");
-        vista.txtfechadeNacimientoCliente.setText("");
-        vista.cboxTipoIDCliente.setSelectedIndex(0);
-        clienteActual = null;
-    }
-
-    private void seleccionarTipoEnCombo(int idTipo) {
-        for (int i = 0; i < vista.cboxTipoIDCliente.getItemCount(); i++) {
-            TipoIdentificacionDTO tipo = (TipoIdentificacionDTO) vista.cboxTipoIDCliente.getItemAt(i);
-            if (tipo != null && tipo.getIdTipoIdentificacion() == idTipo) {
-                vista.cboxTipoIDCliente.setSelectedIndex(i);
-                break;
-            }
-        }
+    private void limpiar() {
+        idClienteSeleccionado = 0; // Reiniciamos selección
+        view.txtIdentificacionCliente.setText("");
+        view.txtnombreCliente.setText("");
+        view.txtfechadeNacimientoCliente.setText("");
+        view.txtedadCliente.setText("");
+        view.txtemailCliente.setText("");
+        view.cboxTipoIDCliente.setSelectedIndex(0);
     }
 }

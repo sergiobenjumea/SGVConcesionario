@@ -1,186 +1,174 @@
 package modelo.dao;
 
-import config.ConexionDB;
+import config.ConexionDB;      // <--- CAMBIO IMPORTANTE: Usamos tu clase ConexionDB
 import modelo.dto.AutomovilDTO;
-import java.sql.*;
-import java.util.ArrayList;
+import modelo.util.ItemCombo;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Vector;
 import java.util.List;
+import java.util.ArrayList;
 
 public class AutomovilDAO {
     
-    // ========== CREATE ==========
-    public int crear(AutomovilDTO auto) {
-        String sql = "INSERT INTO automoviles (codigo, id_marca, id_linea, anio, color, id_tipo_motor, precio_base, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-        try (Connection con = ConexionDB.getConexion();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, auto.getCodigo());
-            ps.setInt(2, auto.getIdMarca());
-            ps.setInt(3, auto.getIdLinea());
-            ps.setInt(4, auto.getAnio());
-            ps.setString(5, auto.getColor());
-            ps.setInt(6, auto.getIdTipoMotor());
-            ps.setDouble(7, auto.getPrecioBase());
-            ps.setString(8, auto.getEstado());
-            return ps.executeUpdate();
+    // Ya no necesitamos instanciar "Conexion con = new Conexion()"
+    Connection acceso;
+    PreparedStatement ps;
+    ResultSet rs;
+
+    // --- MÉTODO REGISTRAR ---
+    public boolean registrar(AutomovilDTO auto) {
+        String sql = "INSERT INTO automoviles (id_linea, modelo_anio, color, id_tipo_motor, precio_base) VALUES (?,?,?,?,?)";
+        
+        try {
+            // LLAMADA CORREGIDA: Usamos el método estático de tu clase
+            acceso = ConexionDB.getConexion(); 
+            
+            ps = acceso.prepareStatement(sql);
+            ps.setInt(1, auto.getIdLinea());
+            ps.setInt(2, auto.getAnio());
+            ps.setString(3, auto.getColor());
+            ps.setInt(4, auto.getIdTipoMotor());
+            ps.setDouble(5, auto.getPrecioBase());
+            
+            ps.executeUpdate();
+            return true;
+            
         } catch (SQLException e) {
-            System.err.println("❌ Error al crear automóvil");
-            e.printStackTrace();
-            return 0;
+            System.err.println("Error en DAO Registrar: " + e.toString());
+            return false;
         }
+        // No cerramos la conexión aquí para mantenerla viva para otras consultas
     }
 
-    // ========== READ por ID ==========
-    public AutomovilDTO leer(int idAuto) {
-        String sql = "SELECT a.*, m.nombre_marca, l.nombre_linea, tm.nombre_tipo as nombre_tipo_motor, tm.porcentaje_impuesto " +
+    // --- OBTENER MARCAS ---
+    public Vector<ItemCombo> obtenerMarcas() {
+        Vector<ItemCombo> items = new Vector<>();
+        String sql = "SELECT id_marca, nombre FROM marcas";
+        
+        try {
+            acceso = ConexionDB.getConexion(); // LLAMADA CORREGIDA
+            ps = acceso.prepareStatement(sql);
+            rs = ps.executeQuery();
+            
+            items.add(new ItemCombo(0, "Seleccione Marca"));
+            
+            while (rs.next()) {
+                items.add(new ItemCombo(rs.getInt("id_marca"), rs.getString("nombre")));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error cargando marcas: " + e.toString());
+        }
+        return items;
+    }
+
+    // --- OBTENER LINEAS POR MARCA ---
+    public Vector<ItemCombo> obtenerLineasPorMarca(int idMarca) {
+        Vector<ItemCombo> items = new Vector<>();
+        String sql = "SELECT id_linea, nombre FROM lineas WHERE id_marca = ?";
+        
+        try {
+            acceso = ConexionDB.getConexion(); // LLAMADA CORREGIDA
+            ps = acceso.prepareStatement(sql);
+            ps.setInt(1, idMarca);
+            rs = ps.executeQuery();
+            
+            items.add(new ItemCombo(0, "Seleccione Línea"));
+            
+            while (rs.next()) {
+                items.add(new ItemCombo(rs.getInt("id_linea"), rs.getString("nombre")));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error cargando líneas: " + e.toString());
+        }
+        return items;
+    }
+    
+    // --- OBTENER TIPOS DE MOTOR ---
+    public Vector<ItemCombo> obtenerTiposMotor() {
+        Vector<ItemCombo> items = new Vector<>();
+        String sql = "SELECT id_tipo_motor, nombre FROM tipos_motor";
+        
+        try {
+            acceso = ConexionDB.getConexion(); // LLAMADA CORREGIDA
+            ps = acceso.prepareStatement(sql);
+            rs = ps.executeQuery();
+            
+            items.add(new ItemCombo(0, "Seleccione Motor"));
+            
+            while (rs.next()) {
+                items.add(new ItemCombo(rs.getInt("id_tipo_motor"), rs.getString("nombre")));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error cargando motores: " + e.toString());
+        }
+        return items;
+    }
+    // --- MÉTODO PARA LISTAR TODOS (CON NOMBRES) ---
+    public List<AutomovilDTO> listar() {
+        List<AutomovilDTO> lista = new ArrayList<>();
+        // Unimos las tablas para obtener los nombres reales
+        String sql = "SELECT a.id_auto, m.nombre AS marca, l.nombre AS linea, a.modelo_anio, a.color, a.precio_base, tm.nombre AS motor " +
                      "FROM automoviles a " +
-                     "INNER JOIN marcas m ON a.id_marca = m.id_marca " +
-                     "INNER JOIN lineas_vehiculos l ON a.id_linea = l.id_linea " +
+                     "INNER JOIN lineas l ON a.id_linea = l.id_linea " +
+                     "INNER JOIN marcas m ON l.id_marca = m.id_marca " +
+                     "INNER JOIN tipos_motor tm ON a.id_tipo_motor = tm.id_tipo_motor " +
+                     "ORDER BY a.id_auto DESC";
+        
+        try {
+            acceso = ConexionDB.getConexion();
+            ps = acceso.prepareStatement(sql);
+            rs = ps.executeQuery();
+            
+            while (rs.next()) {
+                AutomovilDTO auto = new AutomovilDTO();
+                // Guardamos el ID por si necesitamos editar/eliminar luego
+                auto.setId(rs.getInt("id_auto"));
+                
+                // Guardamos los datos visuales en los campos auxiliares
+                auto.setNombreMarca(rs.getString("marca"));
+                auto.setNombreLinea(rs.getString("linea"));
+                auto.setAnio(rs.getInt("modelo_anio"));
+                auto.setColor(rs.getString("color"));
+                auto.setPrecioBase(rs.getDouble("precio_base"));
+                auto.setNombreMotor(rs.getString("motor"));
+                
+                lista.add(auto);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error al listar: " + e.toString());
+        }
+        return lista;
+    }
+    // Buscar auto por ID para traer precio y datos
+    public AutomovilDTO buscarPorId(int id) {
+        AutomovilDTO a = null;
+        String sql = "SELECT a.*, l.nombre as linea, m.nombre as marca, tm.nombre as motor " +
+                     "FROM automoviles a " +
+                     "INNER JOIN lineas l ON a.id_linea = l.id_linea " +
+                     "INNER JOIN marcas m ON l.id_marca = m.id_marca " +
                      "INNER JOIN tipos_motor tm ON a.id_tipo_motor = tm.id_tipo_motor " +
                      "WHERE a.id_auto = ?";
-        try (Connection con = ConexionDB.getConexion();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, idAuto);
-            ResultSet rs = ps.executeQuery();
+        try {
+            acceso = ConexionDB.getConexion();
+            ps = acceso.prepareStatement(sql);
+            ps.setInt(1, id);
+            rs = ps.executeQuery();
             if (rs.next()) {
-                return cargarDesdeResultSet(rs);
+                a = new AutomovilDTO();
+                a.setId(rs.getInt("id_auto"));
+                a.setNombreMarca(rs.getString("marca"));
+                a.setNombreLinea(rs.getString("linea"));
+                a.setAnio(rs.getInt("modelo_anio"));
+                a.setColor(rs.getString("color"));
+                a.setPrecioBase(rs.getDouble("precio_base"));
+                a.setNombreMotor(rs.getString("motor"));
+                // Importante: Guardar el estado para saber si ya se vendió
+                // (Necesitarás agregar private String estado; en tu DTO si quieres validarlo estricto)
             }
-        } catch (SQLException e) {
-            System.err.println("❌ Error al leer automóvil por ID");
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    // ========== READ por Código ==========
-    public AutomovilDTO leerPorCodigo(String codigo) {
-        String sql = "SELECT a.*, m.nombre_marca, l.nombre_linea, tm.nombre_tipo as nombre_tipo_motor, tm.porcentaje_impuesto " +
-                     "FROM automoviles a " +
-                     "INNER JOIN marcas m ON a.id_marca = m.id_marca " +
-                     "INNER JOIN lineas_vehiculos l ON a.id_linea = l.id_linea " +
-                     "INNER JOIN tipos_motor tm ON a.id_tipo_motor = tm.id_tipo_motor " +
-                     "WHERE a.codigo = ?";
-        try (Connection con = ConexionDB.getConexion();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, codigo);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
-                return cargarDesdeResultSet(rs);
-            }
-        } catch (SQLException e) {
-            System.err.println("❌ Error al leer automóvil por código");
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    // ========== BUSCAR POR CÓDIGO (Alias de leerPorCodigo) ==========
-    public AutomovilDTO buscarPorCodigo(String codigo) {
-        return leerPorCodigo(codigo);
-    }
-
-    // ========== UPDATE ==========
-    public int actualizar(AutomovilDTO auto) {
-        String sql = "UPDATE automoviles SET codigo = ?, id_marca = ?, id_linea = ?, anio = ?, color = ?, id_tipo_motor = ?, precio_base = ?, estado = ? WHERE id_auto = ?";
-        try (Connection con = ConexionDB.getConexion();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, auto.getCodigo());
-            ps.setInt(2, auto.getIdMarca());
-            ps.setInt(3, auto.getIdLinea());
-            ps.setInt(4, auto.getAnio());
-            ps.setString(5, auto.getColor());
-            ps.setInt(6, auto.getIdTipoMotor());
-            ps.setDouble(7, auto.getPrecioBase());
-            ps.setString(8, auto.getEstado());
-            ps.setInt(9, auto.getIdAuto());
-            return ps.executeUpdate();
-        } catch (SQLException e) {
-            System.err.println("❌ Error al actualizar automóvil");
-            e.printStackTrace();
-            return 0;
-        }
-    }
-
-    // ========== DELETE ==========
-    public int eliminar(int idAuto) {
-        String sql = "DELETE FROM automoviles WHERE id_auto = ? AND estado = 'Disponible'";
-        try (Connection con = ConexionDB.getConexion();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, idAuto);
-            return ps.executeUpdate();
-        } catch (SQLException e) {
-            System.err.println("❌ Error al eliminar automóvil");
-            e.printStackTrace();
-            return 0;
-        }
-    }
-
-    // ========== READ ALL ==========
-    public List<AutomovilDTO> leerTodos() {
-        String sql = "SELECT a.*, m.nombre_marca, l.nombre_linea, tm.nombre_tipo as nombre_tipo_motor, tm.porcentaje_impuesto " +
-                     "FROM automoviles a " +
-                     "INNER JOIN marcas m ON a.id_marca = m.id_marca " +
-                     "INNER JOIN lineas_vehiculos l ON a.id_linea = l.id_linea " +
-                     "INNER JOIN tipos_motor tm ON a.id_tipo_motor = tm.id_tipo_motor " +
-                     "ORDER BY m.nombre_marca, l.nombre_linea, a.anio";
-        List<AutomovilDTO> lista = new ArrayList<>();
-        try (Connection con = ConexionDB.getConexion();
-             PreparedStatement ps = con.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                lista.add(cargarDesdeResultSet(rs));
-            }
-        } catch (SQLException e) {
-            System.err.println("❌ Error al leer todos los automóviles");
-            e.printStackTrace();
-        }
-        return lista;
-    }
-
-    // ========== READ Disponibles ==========
-    public List<AutomovilDTO> leerDisponibles() {
-        String sql = "SELECT a.*, m.nombre_marca, l.nombre_linea, tm.nombre_tipo as nombre_tipo_motor, tm.porcentaje_impuesto " +
-                     "FROM automoviles a " +
-                     "INNER JOIN marcas m ON a.id_marca = m.id_marca " +
-                     "INNER JOIN lineas_vehiculos l ON a.id_linea = l.id_linea " +
-                     "INNER JOIN tipos_motor tm ON a.id_tipo_motor = tm.id_tipo_motor " +
-                     "WHERE a.estado = 'Disponible' " +
-                     "ORDER BY m.nombre_marca, l.nombre_linea, a.anio";
-        List<AutomovilDTO> lista = new ArrayList<>();
-        try (Connection con = ConexionDB.getConexion();
-             PreparedStatement ps = con.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                lista.add(cargarDesdeResultSet(rs));
-            }
-        } catch (SQLException e) {
-            System.err.println("❌ Error al leer automóviles disponibles");
-            e.printStackTrace();
-        }
-        return lista;
-    }
-
-    // ========== METODO PRIVADO: Cargar desde ResultSet ==========
-    private AutomovilDTO cargarDesdeResultSet(ResultSet rs) throws SQLException {
-        AutomovilDTO auto = new AutomovilDTO();
-        auto.setIdAuto(rs.getInt("id_auto"));
-        auto.setCodigo(rs.getString("codigo"));
-        auto.setIdMarca(rs.getInt("id_marca"));
-        auto.setIdLinea(rs.getInt("id_linea"));
-        auto.setAnio(rs.getInt("anio"));
-        auto.setColor(rs.getString("color"));
-        auto.setIdTipoMotor(rs.getInt("id_tipo_motor"));
-        auto.setPrecioBase(rs.getDouble("precio_base"));
-        auto.setEstado(rs.getString("estado"));
-        auto.setFechaIngreso(rs.getTimestamp("fecha_ingreso"));
-        // JOIN info
-        auto.setNombreMarca(rs.getString("nombre_marca"));
-        auto.setNombreLinea(rs.getString("nombre_linea"));
-        auto.setNombreTipoMotor(rs.getString("nombre_tipo_motor"));
-        auto.setPorcentajeImpuesto(rs.getDouble("porcentaje_impuesto"));
-        // Estos campos asume triggers o la BD los calcula
-        try { auto.setImpuestoVenta(rs.getDouble("impuesto_venta")); } catch(Exception ignored) {}
-        try { auto.setIva(rs.getDouble("iva")); } catch(Exception ignored) {}
-        try { auto.setPrecioTotal(rs.getDouble("precio_total")); } catch(Exception ignored) {}
-        return auto;
+        } catch (Exception e) { e.printStackTrace(); }
+        return a;
     }
 }

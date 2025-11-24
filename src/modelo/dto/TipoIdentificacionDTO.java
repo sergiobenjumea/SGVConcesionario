@@ -1,59 +1,33 @@
 package modelo.dto;
 
-import java.io.Serializable;
-
-public class TipoIdentificacionDTO implements Serializable {
-
+public class TipoIdentificacionDTO {
     private int idTipoIdentificacion;
-    private String codigoTipo;
-    private String nombreTipo;
-    private String descripcion;
-    private int activo;
+    private String codigo;
+    private String nombre;
+    private boolean activo;
 
-    // Getters y setters
-    public int getIdTipoIdentificacion() {
-        return idTipoIdentificacion;
+    public TipoIdentificacionDTO() {}
+
+    public TipoIdentificacionDTO(int id, String codigo, String nombre) {
+        this.idTipoIdentificacion = id;
+        this.codigo = codigo;
+        this.nombre = nombre;
     }
 
-    public void setIdTipoIdentificacion(int idTipoIdentificacion) {
-        this.idTipoIdentificacion = idTipoIdentificacion;
-    }
+    public int getIdTipoIdentificacion() { return idTipoIdentificacion; }
+    public void setIdTipoIdentificacion(int idTipoIdentificacion) { this.idTipoIdentificacion = idTipoIdentificacion; }
 
-    public String getCodigoTipo() {
-        return codigoTipo;
-    }
+    public String getCodigo() { return codigo; }
+    public void setCodigo(String codigo) { this.codigo = codigo; }
 
-    public void setCodigoTipo(String codigoTipo) {
-        this.codigoTipo = codigoTipo;
-    }
+    public String getNombre() { return nombre; }
+    public void setNombre(String nombre) { this.nombre = nombre; }
 
-    public String getNombreTipo() {
-        return nombreTipo;
-    }
+    public boolean isActivo() { return activo; }
+    public void setActivo(boolean activo) { this.activo = activo; }
 
-    public void setNombreTipo(String nombreTipo) {
-        this.nombreTipo = nombreTipo;
-    }
-
-    public String getDescripcion() {
-        return descripcion;
-    }
-
-    public void setDescripcion(String descripcion) {
-        this.descripcion = descripcion;
-    }
-
-    public int getActivo() {
-        return activo;
-    }
-
-    public void setActivo(int activo) {
-        this.activo = activo;
-    }
-
-    // Método para mostrar el nombre en el JComboBox
     @Override
     public String toString() {
-        return nombreTipo; // El texto mostrado en el JComboBox
+        return nombre; // Para mostrar correctamente en el ComboBox
     }
 }

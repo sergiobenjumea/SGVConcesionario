@@ -1,15 +1,10 @@
 package modelo.dto;
 
-import java.io.Serializable;
-
-public class LineaVehiculoDTO implements Serializable {
+public class LineaVehiculoDTO {
     private int idLinea;
     private int idMarca;
-    private String nombreLinea;
-    private int activo;
-
-    // Solo para mostrar
-    private String nombreMarca;
+    private String nombre;
+    private boolean activo;
 
     public LineaVehiculoDTO() {}
 
@@ -19,15 +14,14 @@ public class LineaVehiculoDTO implements Serializable {
     public int getIdMarca() { return idMarca; }
     public void setIdMarca(int idMarca) { this.idMarca = idMarca; }
 
-    public String getNombreLinea() { return nombreLinea; }
-    public void setNombreLinea(String nombreLinea) { this.nombreLinea = nombreLinea; }
+    public String getNombre() { return nombre; }
+    public void setNombre(String nombre) { this.nombre = nombre; }
 
-    public int getActivo() { return activo; }
-    public void setActivo(int activo) { this.activo = activo; }
-
-    public String getNombreMarca() { return nombreMarca; }
-    public void setNombreMarca(String nombreMarca) { this.nombreMarca = nombreMarca; }
+    public boolean isActivo() { return activo; }
+    public void setActivo(boolean activo) { this.activo = activo; }
 
     @Override
-    public String toString() { return nombreLinea; }
+    public String toString() {
+        return nombre;
+    }
 }

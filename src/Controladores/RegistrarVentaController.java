@@ -1,433 +1,272 @@
 package Controladores;
 
-import modelo.dao.*;
-import modelo.dto.*;
+import modelo.dao.*; // Importamos todos los DAOs
+import modelo.dto.*; // Importamos todos los DTOs
+import modelo.util.ItemCombo;
 import vistas.UIRegistrarventa;
-import javax.swing.JOptionPane;
-import javax.swing.table.DefaultTableModel;
+
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.sql.Date;
+import java.time.LocalDate;
 import java.util.List;
+import modelo.util.Formato;
 import modelo.util.GeneradorPDF;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
 
-
-/**
- * Controlador para UIRegistrarventa
- * Maneja el proceso completo de registro de ventas
- */
 public class RegistrarVentaController implements ActionListener {
+
+    private UIRegistrarventa view;
     
-    private UIRegistrarventa vista;
+    // Instanciamos todos los DAOs necesarios
     private VentaDAO ventaDAO;
-    private ClienteDAO clienteDAO;
     private VendedorDAO vendedorDAO;
-    private AutomovilDAO automovilDAO;
-    private FormaPagoDAO formaPagoDAO;
-    private DefaultTableModel modeloTabla;
-    
-    // Variables temporales para almacenar los datos consultados
-    private ClienteDTO clienteSeleccionado;
-    private VendedorDTO vendedorSeleccionado;
-    private AutomovilDTO automovilSeleccionado;
-    
-    public RegistrarVentaController(UIRegistrarventa vista) {
-        this.vista = vista;
+    private ClienteDAO clienteDAO;
+    private AutomovilDAO autoDAO;
+    private FormasPagoDAO pagoDAO;
+
+    // Variables temporales para guardar los IDs encontrados
+    private int idVendedorEncontrado = 0;
+    private int idClienteEncontrado = 0;
+    private int idAutoEncontrado = 0;
+
+    public RegistrarVentaController(UIRegistrarventa view) {
+        this.view = view;
         this.ventaDAO = new VentaDAO();
-        this.clienteDAO = new ClienteDAO();
         this.vendedorDAO = new VendedorDAO();
-        this.automovilDAO = new AutomovilDAO();
-        this.formaPagoDAO = new FormaPagoDAO();
+        this.clienteDAO = new ClienteDAO();
+        this.autoDAO = new AutomovilDAO();
+        this.pagoDAO = new FormasPagoDAO();
+
+        this.view.setLocationRelativeTo(null);
         
-        // Inicializar la vista
-        inicializarVista();
-        
-        // Agregar listeners
-        this.vista.btnConsultarVendedor.addActionListener(this);
-        this.vista.btnConsultarAuto.addActionListener(this);
-        this.vista.btnConsultarCliente.addActionListener(this);
-        this.vista.btnCalcularTotal.addActionListener(this);
-        this.vista.btnRegistrarVenta.addActionListener(this);
-    }
-    
-    private void inicializarVista() {
-        // Configurar fecha actual
-        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
-        vista.txtFecha.setText(sdf.format(new Date()));
-        
-        // Generar número de factura
-        String numeroFactura = ventaDAO.generarNumeroFactura();
-        vista.txtNoFactura.setText(numeroFactura);
-        
-        // Cargar formas de pago
+        // Carga Inicial
+        cargarFechaYFactura();
         cargarFormasPago();
-        
-        // Configurar tabla
-        modeloTabla = (DefaultTableModel) vista.tblVentasRealizadas.getModel();
-        modeloTabla.setRowCount(0);
-        modeloTabla.setColumnIdentifiers(new String[]{
-            "No. Factura", "Fecha", "Vendedor", "Vehículo", "Cliente", "Total"
-        });
-        
-        // Cargar ventas existentes
-        cargarVentasRealizadas();
-        
-        System.out.println("✅ Vista de ventas inicializada correctamente");
+        listarVentas();
+
+        // Listeners
+        this.view.btnConsultarVendedor.addActionListener(this);
+        this.view.btnConsultarCliente.addActionListener(this);
+        this.view.btnConsultarAuto.addActionListener(this);
+        this.view.btnCalcularTotal.addActionListener(this);
+        this.view.btnRegistrarVenta.addActionListener(this);
     }
-    
+
+    private void cargarFechaYFactura() {
+        this.view.txtFecha.setText(LocalDate.now().toString());
+        this.view.txtNoFactura.setText(ventaDAO.obtenerSiguienteFactura());
+    }
+
     private void cargarFormasPago() {
-        List<FormaPagoDTO> formas = formaPagoDAO.leerTodos();
-        
-        vista.cboxFormasPago.removeAllItems();
-        vista.cboxFormasPago.addItem(""); // Opción vacía
-        
-        for (FormaPagoDTO forma : formas) {
-            vista.cboxFormasPago.addItem(forma.getCodigoForma());
+        // Obtenemos formas de pago y las metemos al combo
+        List<FormasPagoDTO> lista = pagoDAO.listar();
+        DefaultComboBoxModel model = new DefaultComboBoxModel();
+        model.addElement(new ItemCombo(0, "Seleccione..."));
+        for (FormasPagoDTO fp : lista) {
+            model.addElement(new ItemCombo(fp.getId(), fp.getNombre()));
         }
+        view.cboxFormasPago.setModel(model);
     }
-    
+
     @Override
     public void actionPerformed(ActionEvent e) {
-        if (e.getSource() == vista.btnConsultarVendedor) {
-            consultarVendedor();
-        } else if (e.getSource() == vista.btnConsultarAuto) {
-            consultarAutomovil();
-        } else if (e.getSource() == vista.btnConsultarCliente) {
-            consultarCliente();
-        } else if (e.getSource() == vista.btnCalcularTotal) {
+        if (e.getSource() == view.btnConsultarVendedor) {
+            buscarVendedor();
+        } else if (e.getSource() == view.btnConsultarCliente) {
+            buscarCliente();
+        } else if (e.getSource() == view.btnConsultarAuto) {
+            buscarAuto();
+        } else if (e.getSource() == view.btnCalcularTotal) {
             calcularTotal();
-        } else if (e.getSource() == vista.btnRegistrarVenta) {
+        } else if (e.getSource() == view.btnRegistrarVenta) {
             registrarVenta();
         }
     }
-    
-    // ========== CONSULTAR VENDEDOR ==========
-    private void consultarVendedor() {
-        String idVendedor = vista.txtIDVendedor.getText().trim();
-        
-        if (idVendedor.isEmpty()) {
-            JOptionPane.showMessageDialog(vista,
-                "Ingrese el ID del vendedor",
-                "Campo vacío",
-                JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        
-        VendedorDTO vendedor = vendedorDAO.leerPorIdentificacion(idVendedor);
-        
-        if (vendedor != null) {
-            vendedorSeleccionado = vendedor;
-            vista.txtNombreVendedor.setText(vendedor.getNombre());
-            vista.txtProfesionVendedor.setText(vendedor.getProfesion());
-            
-            JOptionPane.showMessageDialog(vista,
-                "Vendedor encontrado",
-                "Consulta exitosa",
-                JOptionPane.INFORMATION_MESSAGE);
-        } else {
-            JOptionPane.showMessageDialog(vista,
-                "Vendedor no encontrado",
-                "Sin resultados",
-                JOptionPane.WARNING_MESSAGE);
-            limpiarVendedor();
-        }
-    }
-    
-    // ========== CONSULTAR AUTOMÓVIL ==========
-    private void consultarAutomovil() {
-        String codigo = vista.txtCodigoAuto.getText().trim();
-        
-        if (codigo.isEmpty()) {
-            JOptionPane.showMessageDialog(vista,
-                "Ingrese el código del automóvil",
-                "Campo vacío",
-                JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        
-        AutomovilDTO auto = automovilDAO.leerPorCodigo(codigo);
-        
-        if (auto != null) {
-            // Verificar que el automóvil esté disponible
-            if (!"Disponible".equals(auto.getEstado())) {
-                JOptionPane.showMessageDialog(vista,
-                    "Este automóvil NO está disponible.\nEstado actual: " + auto.getEstado(),
-                    "Automóvil no disponible",
-                    JOptionPane.WARNING_MESSAGE);
-                limpiarAutomovil();
-                return;
-            }
-            
-            automovilSeleccionado = auto;
-            vista.txtMarca.setText(auto.getMarca());
-            vista.txtColorAuto.setText(auto.getColor());
-            vista.txtPrecioBase.setText(String.format("$%,.2f", auto.getPrecioBase()));
-            vista.txtTipoMotor.setText(auto.getNombreTipoMotor());
-            
-            JOptionPane.showMessageDialog(vista,
-                "Automóvil encontrado\nPrecio Total: $" + String.format("%,.2f", auto.getPrecioTotal()),
-                "Consulta exitosa",
-                JOptionPane.INFORMATION_MESSAGE);
-        } else {
-            JOptionPane.showMessageDialog(vista,
-                "Automóvil no encontrado",
-                "Sin resultados",
-                JOptionPane.WARNING_MESSAGE);
-            limpiarAutomovil();
-        }
-    }
-    
-    // ========== CONSULTAR CLIENTE ==========
-    private void consultarCliente() {
-        String idCliente = vista.txtIDCliente.getText().trim();
-        
-        if (idCliente.isEmpty()) {
-            JOptionPane.showMessageDialog(vista,
-                "Ingrese el ID del cliente",
-                "Campo vacío",
-                JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        
-        ClienteDTO cliente = clienteDAO.leerPorIdentificacion(idCliente);
-        
-        if (cliente != null) {
-            clienteSeleccionado = cliente;
-            vista.txtNombreCliente.setText(cliente.getNombre());
-            vista.txtEdadCliente.setText(String.valueOf(cliente.getEdad()));
-            vista.txteMailCliente.setText(cliente.getEmail());
-            
-            JOptionPane.showMessageDialog(vista,
-                "Cliente encontrado",
-                "Consulta exitosa",
-                JOptionPane.INFORMATION_MESSAGE);
-        } else {
-            JOptionPane.showMessageDialog(vista,
-                "Cliente no encontrado",
-                "Sin resultados",
-                JOptionPane.WARNING_MESSAGE);
-            limpiarCliente();
-        }
-    }
-    
-    // ========== CALCULAR TOTAL ==========
-    private void calcularTotal() {
-    // Validar que haya un automóvil seleccionado
-    if (automovilSeleccionado == null) {
-        JOptionPane.showMessageDialog(vista,
-            "Primero debe consultar un automóvil",
-            "Automóvil requerido",
-            JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-    
-    // Validar forma de pago
-    String codigoFormaPago = (String) vista.cboxFormasPago.getSelectedItem();
-    if (codigoFormaPago == null || codigoFormaPago.trim().isEmpty()) {
-        JOptionPane.showMessageDialog(vista,
-            "Seleccione una forma de pago",
-            "Forma de pago requerida",
-            JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-    
-    // Ya NO necesitas buscar ni mostrar la descripción en un campo de texto
-    // El usuario ve la forma de pago directamente en el combo
-    
-    // Los valores ya están calculados en el automóvil
-    double impuesto = automovilSeleccionado.getImpuestoVenta();
-    double iva = automovilSeleccionado.getIva();
-    double total = automovilSeleccionado.getPrecioTotal();
-    
-    vista.txtImpoVenta.setText(String.format("$%,.2f", impuesto));
-    vista.txtIVA.setText(String.format("$%,.2f", iva));
-    vista.txtTotalPagar.setText(String.format("$%,.2f", total));
-    
-    JOptionPane.showMessageDialog(vista,
-        "Total calculado correctamente\n\n" +
-        "Precio Base: $" + String.format("%,.2f", automovilSeleccionado.getPrecioBase()) + "\n" +
-        "Impuesto: $" + String.format("%,.2f", impuesto) + "\n" +
-        "IVA: $" + String.format("%,.2f", iva) + "\n" +
-        "TOTAL: $" + String.format("%,.2f", total),
-        "Cálculo exitoso",
-        JOptionPane.INFORMATION_MESSAGE);
-}
 
-    
-    // ========== REGISTRAR VENTA ==========
-    private void registrarVenta() {
+    // --- MÉTODOS DE BÚSQUEDA ---
+
+    private void buscarVendedor() {
+        String id = view.txtIDVendedor.getText();
+        if (id.isEmpty()) { JOptionPane.showMessageDialog(view, "Ingrese ID Vendedor"); return; }
+        
+        VendedorDTO v = vendedorDAO.buscarPorIdentificacion(id);
+        if (v != null) {
+            view.txtNombreVendedor.setText(v.getNombre());
+            view.txtProfesionVendedor.setText(v.getProfesion());
+            idVendedorEncontrado = v.getId();
+        } else {
+            JOptionPane.showMessageDialog(view, "Vendedor no encontrado");
+        }
+    }
+
+    private void buscarCliente() {
+        String id = view.txtIDCliente.getText();
+        if (id.isEmpty()) { JOptionPane.showMessageDialog(view, "Ingrese ID Cliente"); return; }
+        
+        ClienteDTO c = clienteDAO.buscarPorIdentificacion(id);
+        if (c != null) {
+            view.txtNombreCliente.setText(c.getNombre());
+            view.txtEdadCliente.setText(String.valueOf(c.getEdad()));
+            view.txteMailCliente.setText(c.getEmail());
+            idClienteEncontrado = c.getId();
+        } else {
+            JOptionPane.showMessageDialog(view, "Cliente no encontrado");
+        }
+    }
+
+    private void buscarAuto() {
+        // En la vista dice "Código Auto", pero usaremos el ID numérico por ahora
         try {
-            // Validaciones
-            if (vendedorSeleccionado == null) {
-                JOptionPane.showMessageDialog(vista,
-                    "Debe consultar un vendedor",
-                    "Vendedor requerido",
-                    JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            
-            if (automovilSeleccionado == null) {
-                JOptionPane.showMessageDialog(vista,
-                    "Debe consultar un automóvil",
-                    "Automóvil requerido",
-                    JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            
-            if (clienteSeleccionado == null) {
-                JOptionPane.showMessageDialog(vista,
-                    "Debe consultar un cliente",
-                    "Cliente requerido",
-                    JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            
-            String codigoFormaPago = (String) vista.cboxFormasPago.getSelectedItem();
-            if (codigoFormaPago == null || codigoFormaPago.trim().isEmpty()) {
-                JOptionPane.showMessageDialog(vista,
-                    "Seleccione una forma de pago",
-                    "Forma de pago requerida",
-                    JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            
-            // Validar que se haya calculado el total
-            if (vista.txtTotalPagar.getText().trim().isEmpty()) {
-                JOptionPane.showMessageDialog(vista,
-                    "Debe calcular el total antes de registrar",
-                    "Total requerido",
-                    JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            
-            // Crear objeto VentaDTO
-            VentaDTO venta = new VentaDTO();
-            venta.setNumeroFactura(vista.txtNoFactura.getText().trim());
-            venta.setFechaVenta(new Date());
-            venta.setIdCliente(clienteSeleccionado.getIdCliente());
-            venta.setIdVendedor(vendedorSeleccionado.getIdVendedor());
-            venta.setIdAuto(automovilSeleccionado.getIdAuto());
-            venta.setCodigoFormaPago(codigoFormaPago);
-            venta.setPrecioBase(automovilSeleccionado.getPrecioBase());
-            venta.setImpuestoVenta(automovilSeleccionado.getImpuestoVenta());
-            venta.setIva(automovilSeleccionado.getIva());
-            venta.setTotalPagar(automovilSeleccionado.getPrecioTotal());
-            venta.setEstado("Activa");
-            
-            // Confirmar
-            int confirmacion = JOptionPane.showConfirmDialog(vista,
-                "¿Confirmar registro de venta?\n\n" +
-                "Factura: " + venta.getNumeroFactura() + "\n" +
-                "Cliente: " + clienteSeleccionado.getNombre() + "\n" +
-                "Vendedor: " + vendedorSeleccionado.getNombre() + "\n" +
-                "Vehículo: " + automovilSeleccionado.getMarca() + " - " + automovilSeleccionado.getCodigo() + "\n" +
-                "Total: $" + String.format("%,.2f", venta.getTotalPagar()),
-                "Confirmar Venta",
-                JOptionPane.YES_NO_OPTION);
-            
-            if (confirmacion == JOptionPane.YES_OPTION) {
-                int resultado = ventaDAO.crear(venta);
+            int id = Integer.parseInt(view.txtCodigoAuto.getText());
+            AutomovilDTO a = autoDAO.buscarPorId(id);
+            if (a != null) {
+                view.txtMarca.setText(a.getNombreMarca());
+                view.txtLinea.setText(a.getNombreLinea());
+                view.txtAnio.setText(String.valueOf(a.getAnio()));
+                view.txtColorAuto.setText(a.getColor());
+                view.txtTipoMotor.setText(a.getNombreMotor());
+                view.txtPrecioBase.setText(String.valueOf(a.getPrecioBase()));
+                idAutoEncontrado = a.getId();
                 
-                if (resultado > 0) {
-                   // Generar PDF automáticamente
-                    GeneradorPDF generador = new GeneradorPDF();
-                    String rutaPDF =generador.generarFactura(venta);
-                    String mensaje = "✅ Venta registrada exitosamente\n\n" +
-                    "Factura No: " + venta.getNumeroFactura() + "\n" +
-                    "Total: $" + String.format("%,.2f", venta.getTotalPagar()) + "\n\n";
-    
-                    if (rutaPDF != null) {
-                        mensaje += "✅ PDF generado en:\n" + rutaPDF;
-
-                        // Preguntar si desea abrir el PDF
-                        int respuesta = JOptionPane.showConfirmDialog(vista,
-                            mensaje + "\n\n¿Desea abrir el PDF?",
-                            "Venta Exitosa",
-                            JOptionPane.YES_NO_OPTION);
-
-                        if (respuesta == JOptionPane.YES_OPTION) {
-                            generador.abrirPDF(rutaPDF);
-                        }
-                    } else {
-                            mensaje += "⚠️ Error: No se pudo generar el PDF";
-                            JOptionPane.showMessageDialog(vista, mensaje, "Advertencia", JOptionPane.WARNING_MESSAGE);
-                    }
-                    limpiarTodo();
-                    cargarVentasRealizadas();
-                }else {
-                    JOptionPane.showMessageDialog(vista,
-                        "Error al registrar la venta",
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE);
-                }
+                // Calculamos totales automáticamente al encontrar el auto
+                calcularTotal();
+            } else {
+                JOptionPane.showMessageDialog(view, "Automóvil no encontrado");
             }
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(view, "Ingrese un ID numérico válido para el auto");
+        }
+    }
+
+    private void calcularTotal() {
+        try {
+            // El precio base suele ser ingresado manualmente sin formato, lo leemos normal
+            double precio = Double.parseDouble(view.txtPrecioBase.getText());
             
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(vista,
-                "Error: " + ex.getMessage(),
-                "Error",
-                JOptionPane.ERROR_MESSAGE);
-            ex.printStackTrace();
+            double impuesto = precio * 0.15; 
+            double iva = precio * 0.19;      
+            double total = precio + impuesto + iva;
+
+            // --- CAMBIO: Mostramos con formato en los campos no editables ---
+            view.txtImpoVenta.setText(Formato.moneda(impuesto));
+            view.txtIVA.setText(Formato.moneda(iva));
+            view.txtTotalPagar.setText(Formato.moneda(total));
+            // ---------------------------------------------------------------
+        } catch (Exception e) {
+            // Ignorar
         }
     }
-    
-    // ========== CARGAR VENTAS REALIZADAS ==========
-    private void cargarVentasRealizadas() {
-        List<VentaDTO> ventas = ventaDAO.leerTodos();
+
+    private void registrarVenta() {
+        // ... (Tus validaciones iniciales de IDs y Combos las dejas igual) ...
+        // ...
+        if (idVendedorEncontrado == 0 || idClienteEncontrado == 0 || idAutoEncontrado == 0) {
+             JOptionPane.showMessageDialog(view, "Debe buscar y seleccionar Vendedor, Cliente y Auto.");
+             return;
+        }
+        ItemCombo pagoSel = (ItemCombo) view.cboxFormasPago.getSelectedItem();
+        if (pagoSel == null || pagoSel.getId() == 0) {
+             JOptionPane.showMessageDialog(view, "Seleccione Forma de Pago");
+             return;
+        }
+
+        // Crear Objeto
+        VentaDTO venta = new VentaDTO();
+        venta.setNumeroFactura(view.txtNoFactura.getText());
+        venta.setFechaVenta(Date.valueOf(LocalDate.now()));
+        venta.setIdVendedor(idVendedorEncontrado);
+        venta.setIdCliente(idClienteEncontrado);
+        venta.setIdAuto(idAutoEncontrado);
+        venta.setIdFormaPago(pagoSel.getId());
         
-        modeloTabla.setRowCount(0);
+        // --- CAMBIO CRÍTICO: Usamos Formato.remover() para guardar ---
+        // Leemos el precio base normal (usuario lo escribe)
+        venta.setPrecioBase(Double.parseDouble(view.txtPrecioBase.getText())); 
         
-        for (VentaDTO venta : ventas) {
-            Object[] fila = {
-                venta.getNumeroFactura(),
-                new SimpleDateFormat("dd/MM/yyyy").format(venta.getFechaVenta()),
-                venta.getNombreVendedor(),
-                venta.getCodigoAuto(),
-                venta.getNombreCliente(),
-                String.format("$%,.2f", venta.getTotalPagar())
-            };
-            modeloTabla.addRow(fila);
+        // Leemos los campos calculados (que tienen signo $) usando remover()
+        venta.setImpuesto(Formato.remover(view.txtImpoVenta.getText()));
+        venta.setIva(Formato.remover(view.txtIVA.getText()));
+        venta.setTotalPagar(Formato.remover(view.txtTotalPagar.getText()));
+        // -------------------------------------------------------------
+
+        if (ventaDAO.registrar(venta)) {
+            JOptionPane.showMessageDialog(view, "¡Venta Registrada!");
+            // --- AQUÍ GENERAMOS EL PDF ---
+            // 1. Completamos los datos visuales que faltan en el DTO para el PDF
+            venta.setNombreVendedor(view.txtNombreVendedor.getText());
+            venta.setNombreCliente(view.txtNombreCliente.getText());
+            venta.setNombreFormaPago(pagoSel.toString()); // ItemCombo devuelve nombre en toString
+            
+            // Armamos la descripción del auto (Marca + Linea + Color)
+            String descAuto = view.txtMarca.getText() + " " + view.txtLinea.getText() + " " + view.txtColorAuto.getText();
+            venta.setDescripcionAuto(descAuto);
+            
+            // 2. Llamamos al generador
+            GeneradorPDF pdf = new GeneradorPDF();
+            pdf.generarFactura(venta);
+            // -----------------------------
+            listarVentas();
+            limpiar();
+        } else {
+            JOptionPane.showMessageDialog(view, "Error al registrar venta");
         }
     }
-    
-    // ========== MÉTODOS AUXILIARES DE LIMPIEZA ==========
-    private void limpiarVendedor() {
-        vista.txtIDVendedor.setText("");
-        vista.txtNombreVendedor.setText("");
-        vista.txtProfesionVendedor.setText("");
-        vendedorSeleccionado = null;
-    }
-    
-    private void limpiarAutomovil() {
-        vista.txtCodigoAuto.setText("");
-        vista.txtMarca.setText("");
-        vista.txtColorAuto.setText("");
-        vista.txtPrecioBase.setText("");
-        vista.txtTipoMotor.setText("");
-        automovilSeleccionado = null;
-    }
-    
-    private void limpiarCliente() {
-        vista.txtIDCliente.setText("");
-        vista.txtNombreCliente.setText("");
-        vista.txtEdadCliente.setText("");
-        vista.txteMailCliente.setText("");
-        clienteSeleccionado = null;
-    }
-    
-    private void limpiarTodo() {
-        limpiarVendedor();
-        limpiarAutomovil();
-        limpiarCliente();
+    private void listarVentas() {
+        List<VentaDTO> lista = ventaDAO.listar();
+        DefaultTableModel model = new DefaultTableModel();
+        model.addColumn("No. Factura");
+        model.addColumn("Fecha");
+        model.addColumn("Vendedor");
+        model.addColumn("Auto");
+        model.addColumn("Cliente");
+        model.addColumn("Total");
         
-        vista.cboxFormasPago.setSelectedIndex(0);
-        vista.txtImpoVenta.setText("");
-        vista.txtIVA.setText("");
-        vista.txtTotalPagar.setText("");
+        for (VentaDTO v : lista) {
+            Object[] fila = new Object[6];
+            fila[0] = v.getNumeroFactura();
+            fila[1] = v.getFechaVenta();
+            fila[2] = v.getNombreVendedor();
+            fila[3] = v.getDescripcionAuto();
+            fila[4] = v.getNombreCliente();
+            
+            // --- CAMBIO: Formato visual para la tabla ---
+            fila[5] = Formato.moneda(v.getTotalPagar());
+            // --------------------------------------------
+            
+            model.addRow(fila);
+        }
+        view.tblVentasRealizadas.setModel(model);
+    }
+
+    private void limpiar() {
+        cargarFechaYFactura();
+        idVendedorEncontrado = 0;
+        idClienteEncontrado = 0;
+        idAutoEncontrado = 0;
         
-        // Generar nuevo número de factura
-        String nuevoNumero = ventaDAO.generarNumeroFactura();
-        vista.txtNoFactura.setText(nuevoNumero);
+        view.txtIDVendedor.setText("");
+        view.txtNombreVendedor.setText("");
+        view.txtProfesionVendedor.setText("");
+        
+        view.txtIDCliente.setText("");
+        view.txtNombreCliente.setText("");
+        view.txtEdadCliente.setText("");
+        view.txteMailCliente.setText("");
+        
+        view.txtCodigoAuto.setText("");
+        view.txtMarca.setText("");
+        view.txtLinea.setText("");
+        view.txtAnio.setText("");
+        view.txtColorAuto.setText("");
+        view.txtTipoMotor.setText("");
+        view.txtPrecioBase.setText("");
+        
+        view.txtImpoVenta.setText("");
+        view.txtIVA.setText("");
+        view.txtTotalPagar.setText("");
+        view.cboxFormasPago.setSelectedIndex(0);
     }
 }
